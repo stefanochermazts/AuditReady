@@ -3,6 +3,126 @@
 ## Panoramica
 Questo documento descrive il piano di sviluppo completo per la piattaforma AuditReady, basato sull'analisi funzionale presente in `documents/analisi-funzionale.md`.
 
+## Strategia Git e Branching
+
+### Workflow Git
+
+Il progetto utilizza un workflow basato su **feature branches** dove ogni step del piano di sviluppo viene implementato in un branch dedicato.
+
+### Convenzioni Branching
+
+- **Branch principale**: `master` (o `main`) - contiene codice stabile e rilasciato
+- **Branch per step**: `step/{numero}-{nome-breve}` - es: `step/2-setup-laravel`, `step/3-multi-tenant`
+- **Branch per fix**: `fix/{descrizione}` - per bugfix urgenti
+- **Branch per feature**: `feature/{nome}` - per feature aggiuntive non nel piano
+
+### Processo per Ogni Step
+
+1. **Creare branch**:
+   ```bash
+   git checkout -b step/2-setup-laravel
+   ```
+
+2. **Implementare step**:
+   - Seguire le specifiche dello step
+   - Committare progressivamente con messaggi chiari
+   - Eseguire test prima di committare
+
+3. **Commit messages**:
+   - Formato: `step/{numero}: {descrizione breve}`
+   - Esempio: `step/2: Install and configure Filament and required packages`
+
+4. **Push branch**:
+   ```bash
+   git push -u origin step/2-setup-laravel
+   ```
+
+5. **Dopo completamento step**:
+   - Verificare che tutti i test passino
+   - Aggiornare documentazione se necessario
+   - Fare commit finale se necessario
+
+### Pull Request Strategy
+
+- **Una PR per step**: Ogni step completa viene mergiato in `master` tramite Pull Request
+- **Review obbligatoria**: Ogni PR deve essere reviewata prima del merge
+- **CI/CD**: Le PR devono passare tutti i test automatici
+- **Documentazione**: Aggiornare README/CHANGELOG se necessario
+
+### Esempio Workflow Completo
+
+```bash
+# 1. Creare branch per step
+git checkout master
+git pull origin master
+git checkout -b step/2-setup-laravel
+
+# 2. Implementare step
+# ... lavoro ...
+
+# 3. Committare progressivamente
+git add .
+git commit -m "step/2: Install Filament and required packages"
+git commit -m "step/2: Configure Filament panel with multi-tenant support"
+
+# 4. Push branch
+git push -u origin step/2-setup-laravel
+
+# 5. Creare Pull Request su GitHub
+# - Titolo: "Step 2: Setup Base Laravel con Pacchetti Richiesti"
+# - Descrizione: Link allo step nel piano, checklist completamento
+# - Review e merge in master
+
+# 6. Dopo merge, aggiornare master locale
+git checkout master
+git pull origin master
+```
+
+### Checklist PR
+
+Ogni Pull Request deve includere:
+
+- [ ] Step completato secondo specifiche
+- [ ] Test passati (unit + feature)
+- [ ] Code quality checks passati (Pint)
+- [ ] Documentazione aggiornata (se necessario)
+- [ ] Nessun file sensibile committato (.env, keys, ecc.)
+- [ ] Commit messages chiari e descrittivi
+
+### Branch Naming per Step
+
+| Step | Branch Name | Descrizione |
+|------|-------------|-------------|
+| 1 | `step/1-architecture` | Design architetturale (completato) |
+| 2 | `step/2-setup-laravel` | Setup base Laravel |
+| 3 | `step/3-multi-tenant` | Infrastruttura multi-tenant |
+| 4 | `step/4-authentication-2fa` | Autenticazione 2FA |
+| 5 | `step/5-rbac` | Role-Based Access Control |
+| 6 | `step/6-filament-ui` | Interfaccia Filament |
+| 7 | `step/7-evidence-management` | Gestione evidenze |
+| 8 | `step/8-audit-trail` | Audit trail immutabile |
+| 9 | `step/9-third-party-upload` | Upload third-party |
+| 10 | `step/10-export-audit` | Export audit |
+| 11 | `step/11-backup-dr` | Backup e disaster recovery |
+| 12 | `step/12-security-hardening` | Hardening sicurezza |
+| 13 | `step/13-documentation-cicd` | Documentazione e CI/CD |
+
+### Protezione Branch Master
+
+Il branch `master` dovrebbe essere protetto con:
+- Require pull request reviews
+- Require status checks to pass
+- Require branches to be up to date
+- No force push
+- No deletion
+
+### Release Strategy
+
+Al completamento di tutti gli step:
+- Creare tag di versione: `v1.0.0`
+- Generare CHANGELOG
+- Creare GitHub Release con note di rilascio
+
 ## Stack Tecnologico
 - **Backend**: Laravel 12.0, PHP 8.2+
 - **Database**: SQLite (dev) / PostgreSQL/MySQL (production)
@@ -44,6 +164,11 @@ Questo documento descrive il piano di sviluppo completo per la piattaforma Audit
 
 **Testing**: Revisionare il design con un esperto di sicurezza; creare checklist per ogni componente da coprire con unit/feature tests.
 
+**Git Workflow**:
+- ✅ Step completato su branch `master` (commit iniziale)
+- ✅ Documentazione architetturale committata
+- ℹ️ Step 1 non richiede branch separato (solo documentazione)
+
 ---
 
 ## Step 2: Setup Base Laravel con Pacchetti Richiesti
@@ -81,6 +206,13 @@ Questo documento descrive il piano di sviluppo completo per la piattaforma Audit
 - Inizializzare Vite e integrare Tailwind
 
 **Testing**: Eseguire `php artisan migrate:fresh` e `php artisan test` per assicurarsi che il progetto compili e i test base passino.
+
+**Git Workflow**:
+- Creare branch: `git checkout -b step/2-setup-laravel`
+- Committare progressivamente con messaggi: `step/2: {descrizione}`
+- Push branch: `git push -u origin step/2-setup-laravel`
+- Creare Pull Request: "Step 2: Setup Base Laravel con Pacchetti Richiesti"
+- Merge in `master` dopo review
 
 ---
 
@@ -129,6 +261,11 @@ Questo documento descrive il piano di sviluppo completo per la piattaforma Audit
 - Test comando `tenant:create` verifica creazione database e migrazioni
 - Test isolamento: query su tenant A non possono vedere dati tenant B
 
+**Git Workflow**:
+- Creare branch: `git checkout -b step/3-multi-tenant`
+- Committare progressivamente: `step/3: {descrizione}`
+- Push e creare PR: "Step 3: Implementare Infrastruttura Multi-Tenant"
+
 ---
 
 ## Step 4: Configurare Autenticazione con 2FA TOTP Obbligatoria
@@ -150,6 +287,11 @@ Questo documento descrive il piano di sviluppo completo per la piattaforma Audit
 
 **Testing**: Unit test generazione secret e cifratura. Feature test login con codici TOTP corretti/incorretti.
 
+**Git Workflow**:
+- Creare branch: `git checkout -b step/4-authentication-2fa`
+- Committare progressivamente: `step/4: {descrizione}`
+- Push e creare PR: "Step 4: Configurare Autenticazione con 2FA TOTP Obbligatoria"
+
 ---
 
 ## Step 5: Implementare Role-Based Access Control (RBAC) per i Cinque Ruoli
@@ -167,6 +309,11 @@ Questo documento descrive il piano di sviluppo completo per la piattaforma Audit
 - Registrare policies in `AuthServiceProvider`
 
 **Testing**: Scrivere feature tests per ogni ruolo tentando azioni permesse e non permesse.
+
+**Git Workflow**:
+- Creare branch: `git checkout -b step/5-rbac`
+- Committare progressivamente: `step/5: {descrizione}`
+- Push e creare PR: "Step 5: Implementare Role-Based Access Control (RBAC)"
 
 ---
 
@@ -236,6 +383,11 @@ Questo documento descrive il piano di sviluppo completo per la piattaforma Audit
 - Test permessi RBAC in risorse Filament
 - Test flusso 2FA in login Filament
 
+**Git Workflow**:
+- Creare branch: `git checkout -b step/6-filament-ui`
+- Committare progressivamente: `step/6: {descrizione}`
+- Push e creare PR: "Step 6: Implementare Interfaccia Filament"
+
 ---
 
 ## Step 7: Progettare e Implementare Sottosistema Gestione Evidenze con Versioning e Crittografia End-to-End
@@ -275,6 +427,11 @@ Questo documento descrive il piano di sviluppo completo per la piattaforma Audit
 
 **Testing**: Unit test funzioni encryption/decryption. Feature test upload, incremento versione, download, verifica integrità.
 
+**Git Workflow**:
+- Creare branch: `git checkout -b step/7-evidence-management`
+- Committare progressivamente: `step/7: {descrizione}`
+- Push e creare PR: "Step 7: Gestione Evidenze con Versioning e Crittografia"
+
 ---
 
 ## Step 8: Implementare Audit Trail Immutabile usando Tabella `audit_logs` Append-Only
@@ -292,6 +449,11 @@ Questo documento descrive il piano di sviluppo completo per la piattaforma Audit
 - Esporre endpoint API per owners/managers per query audit logs con paginazione, filtri, export (CSV/JSON) rispettando isolamento tenant
 
 **Testing**: Unit test `AuditLogService` verifica generazione signature. Feature test che crea, aggiorna, elimina Evidence e asserisce corrispondenti log entries.
+
+**Git Workflow**:
+- Creare branch: `git checkout -b step/8-audit-trail`
+- Committare progressivamente: `step/8: {descrizione}`
+- Push e creare PR: "Step 8: Implementare Audit Trail Immutabile"
 
 ---
 
@@ -314,6 +476,11 @@ Questo documento descrive il piano di sviluppo completo per la piattaforma Audit
 
 **Testing**: Scrivere API feature tests usando JWT generati per upload file. Test rifiuto upload senza ruolo o token appropriato.
 
+**Git Workflow**:
+- Creare branch: `git checkout -b step/9-third-party-upload`
+- Committare progressivamente: `step/9: {descrizione}`
+- Push e creare PR: "Step 9: Sviluppare Modulo Upload Third-Party"
+
 ---
 
 ## Step 10: Implementare Funzionalità Export Audit (PDF/CSV) con Processing Asincrono
@@ -331,6 +498,11 @@ Questo documento descrive il piano di sviluppo completo per la piattaforma Audit
 - Aggiungere componente UI in Blade per richiedere export e mostrare status export
 
 **Testing**: Queue fake job in tests e asserire che è stato dispatchato. Integration test end-to-end.
+
+**Git Workflow**:
+- Creare branch: `git checkout -b step/10-export-audit`
+- Committare progressivamente: `step/10: {descrizione}`
+- Push e creare PR: "Step 10: Implementare Funzionalità Export Audit"
 
 ---
 
@@ -356,6 +528,11 @@ Questo documento descrive il piano di sviluppo completo per la piattaforma Audit
 
 **Testing**: Eseguire backup job in ambiente test e verificare file appaiono nel backup bucket. Simulare restore.
 
+**Git Workflow**:
+- Creare branch: `git checkout -b step/11-backup-dr`
+- Committare progressivamente: `step/11: {descrizione}`
+- Push e creare PR: "Step 11: Configurare Strategia Backup e Disaster Recovery"
+
 ---
 
 ## Step 12: Implementare Hardening Sicurezza Completo e Compliance Checks
@@ -376,6 +553,11 @@ Questo documento descrive il piano di sviluppo completo per la piattaforma Audit
 - Preparare endpoint GDPR Data Subject Access Request (DSAR) che estrae tutti dati personali per un utente, cifrati, e invia via email
 
 **Testing**: Scrivere security tests: tentativo accesso cross-tenant, test CSRF token mancante, verifica header HSTS presente.
+
+**Git Workflow**:
+- Creare branch: `git checkout -b step/12-security-hardening`
+- Committare progressivamente: `step/12: {descrizione}`
+- Push e creare PR: "Step 12: Implementare Hardening Sicurezza Completo"
 
 ---
 
@@ -401,6 +583,12 @@ Questo documento descrive il piano di sviluppo completo per la piattaforma Audit
 - Aggiungere documentazione migration e seed data description
 
 **Testing**: Verificare CI runs su fresh fork; assicurarsi tutti gli step passino. Revisionare manualmente API docs generati.
+
+**Git Workflow**:
+- Creare branch: `git checkout -b step/13-documentation-cicd`
+- Committare progressivamente: `step/13: {descrizione}`
+- Push e creare PR: "Step 13: Finalizzare Documentazione e CI/CD"
+- Dopo merge: Creare tag `v1.0.0` e GitHub Release
 
 ---
 
