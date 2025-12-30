@@ -5,8 +5,8 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\EvidenceResource\Pages;
 use App\Models\Evidence;
 use Filament\Forms;
-use Filament\Forms\Form;
 use Filament\Resources\Resource;
+use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -27,9 +27,9 @@ class EvidenceResource extends Resource
         return 'Evidence Management';
     }
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form
+        return $schema
             ->schema([
                 Forms\Components\Select::make('audit_id')
                     ->relationship('audit', 'name')
