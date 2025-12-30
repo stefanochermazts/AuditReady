@@ -46,3 +46,18 @@ Route::middleware([
     // Tenant-specific routes will be added here
     // Filament admin panel will be accessible at /admin for each tenant
 });
+
+// Tenant API routes (with tenant context)
+Route::middleware([
+    'api',
+    \App\Http\Middleware\InitializeTenancyByHeader::class,
+    PreventAccessFromCentralDomains::class,
+])->prefix('api/tenant')->group(function () {
+    // Audit logs API (requires authentication and proper role)
+    Route::middleware(['auth:sanctum'])->group(function () {
+        Route::get('/audit-logs', [App\Http\Controllers\AuditLogController::class, 'index'])->name('api.tenant.audit-logs.index');
+        Route::get('/audit-logs/{id}', [App\Http\Controllers\AuditLogController::class, 'show'])->name('api.tenant.audit-logs.show');
+        Route::get('/audit-logs/export/csv', [App\Http\Controllers\AuditLogController::class, 'exportCsv'])->name('api.tenant.audit-logs.export.csv');
+        Route::get('/audit-logs/export/json', [App\Http\Controllers\AuditLogController::class, 'exportJson'])->name('api.tenant.audit-logs.export.json');
+    });
+});
