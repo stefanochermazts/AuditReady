@@ -18,12 +18,30 @@ use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
 |
 */
 
+/*
+|--------------------------------------------------------------------------
+| Tenant Routes
+|--------------------------------------------------------------------------
+|
+| These routes are loaded for each tenant when tenancy is initialized.
+| Tenant identification happens via middleware (subdomain, header, or path).
+|
+*/
+
 Route::middleware([
     'web',
-    InitializeTenancyByDomain::class,
+    \Stancl\Tenancy\Middleware\InitializeTenancyBySubdomain::class,
     PreventAccessFromCentralDomains::class,
 ])->group(function () {
     Route::get('/', function () {
-        return 'This is your multi-tenant application. The id of the current tenant is ' . tenant('id');
+        $tenant = tenant();
+        return view('tenant-welcome', [
+            'tenant' => $tenant,
+            'tenantId' => tenant('id'),
+            'tenantName' => $tenant->data['name'] ?? 'Unknown',
+        ]);
     });
+    
+    // Tenant-specific routes will be added here
+    // Filament admin panel will be accessible at /admin for each tenant
 });
