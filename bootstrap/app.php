@@ -17,6 +17,11 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             \Stancl\Tenancy\Middleware\InitializeTenancyBySubdomain::class,
         ]);
+        
+        // Require 2FA for authenticated users with 2FA enabled
+        $middleware->web(append: [
+            \App\Http\Middleware\RequireTwoFactor::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
