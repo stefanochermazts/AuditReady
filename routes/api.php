@@ -26,7 +26,6 @@ Route::middleware([
     InitializeTenancyByHeader::class,
 ])->prefix('tenant')->group(function () {
     // Tenant-specific API routes
-    // External upload API will be here (Step 9)
     
     Route::get('/info', function () {
         return response()->json([
@@ -34,4 +33,15 @@ Route::middleware([
             'tenant_name' => tenant()->data['name'] ?? 'Unknown',
         ]);
     });
+});
+
+// External upload API (third-party upload)
+Route::middleware([
+    'api',
+    \App\Http\Middleware\ValidateJwtToken::class,
+    InitializeTenancyByHeader::class,
+    \App\Http\Middleware\RequireExternalUploaderRole::class,
+])->prefix('external')->group(function () {
+    Route::post('/evidences', [App\Http\Controllers\ExternalEvidenceController::class, 'store'])
+        ->name('api.external.evidences.store');
 });

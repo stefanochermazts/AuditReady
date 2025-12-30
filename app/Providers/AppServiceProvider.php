@@ -31,5 +31,41 @@ class AppServiceProvider extends ServiceProvider
                 }
             }
         }
+        
+        // Register audit observers for auditable models
+        $this->registerAuditObservers();
+        
+        // Register custom gates
+        $this->registerGates();
+    }
+    
+    /**
+     * Register audit observers for models that should be audited
+     */
+    protected function registerAuditObservers(): void
+    {
+        $auditableModels = [
+            \App\Models\Audit::class,
+            \App\Models\Evidence::class,
+            \App\Models\User::class,
+        ];
+        
+        foreach ($auditableModels as $model) {
+            $model::observe(\App\Observers\AuditObserver::class);
+        }
+    }
+    
+    /**
+     * Register custom authorization gates
+     */
+    protected function registerGates(): void
+    {
+        \Illuminate\Support\Facades\Gate::define('viewAuditLogs', function ($user) {
+            return $user->hasAnyRole(['Organization Owner', 'Audit Manager']);
+        });
+        
+        \Illuminate\Support\Facades\Gate::define('exportAuditLogs', function ($user) {
+            return $user->hasAnyRole(['Organization Owner', 'Audit Manager']);
+        });
     }
 }
