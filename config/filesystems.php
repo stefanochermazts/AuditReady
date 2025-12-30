@@ -119,24 +119,6 @@ return [
             'report' => false,
         ],
 
-        /*
-        |--------------------------------------------------------------------------
-        | Tenant Storage Disk
-        |--------------------------------------------------------------------------
-        |
-        | This disk is used for tenant-specific file storage. The actual provider
-        | is determined by the STORAGE_PROVIDER environment variable.
-        |
-        */
-
-        'tenant' => [
-            'driver' => env('STORAGE_PROVIDER', 'local') === 'local' ? 'local' : 's3',
-            'root' => storage_path('app/tenants'),
-            'disk' => env('STORAGE_PROVIDER', 'local'),
-            'throw' => false,
-            'report' => false,
-        ],
-
     ],
 
     /*
