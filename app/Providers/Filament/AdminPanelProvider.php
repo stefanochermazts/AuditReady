@@ -47,7 +47,7 @@ class AdminPanelProvider extends PanelProvider
                 AccountWidget::class,
             ])
             ->middleware([
-                TenantFilamentMiddleware::class, // Initialize tenant context first
+                TenantFilamentMiddleware::class, // Handle tenant context for Filament
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,
                 StartSession::class,

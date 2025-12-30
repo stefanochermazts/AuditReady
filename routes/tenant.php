@@ -30,17 +30,18 @@ use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
 
 Route::middleware([
     'web',
+    PreventAccessFromCentralDomains::class, // Check central domains FIRST
     \Stancl\Tenancy\Middleware\InitializeTenancyBySubdomain::class,
-    PreventAccessFromCentralDomains::class,
 ])->group(function () {
-    Route::get('/', function () {
+    // Tenant welcome page (only accessible from tenant subdomains)
+    Route::get('/welcome', function () {
         $tenant = tenant();
         return view('tenant-welcome', [
             'tenant' => $tenant,
             'tenantId' => tenant('id'),
             'tenantName' => $tenant->data['name'] ?? 'Unknown',
         ]);
-    });
+    })->name('tenant.welcome');
     
     // Tenant-specific routes will be added here
     // Filament admin panel will be accessible at /admin for each tenant

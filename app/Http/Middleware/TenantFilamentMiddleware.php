@@ -4,15 +4,14 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
-use Stancl\Tenancy\Middleware\InitializeTenancyBySubdomain;
-use Stancl\Tenancy\Tenancy;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Middleware to initialize tenancy for Filament requests
+ * Middleware to handle tenant context for Filament requests
  * 
- * This middleware ensures that tenant context is resolved before
- * any Filament resource or page is accessed.
+ * For central domains, Filament works without tenant context.
+ * For tenant domains, tenancy should already be initialized by
+ * the tenant route middleware stack.
  */
 class TenantFilamentMiddleware
 {
@@ -23,17 +22,23 @@ class TenantFilamentMiddleware
      */
     public function handle(Request $request, Closure $next): Response
     {
-        // Use the existing subdomain initialization middleware logic
-        // The tenancy is already initialized by InitializeTenancyBySubdomain
-        // in the tenant routes, but we ensure it's set for Filament
+        // Check if we're accessing from a central domain
+        // If so, Filament should work without tenant context (for central admin)
+        $centralDomains = config('tenancy.central_domains', []);
+        $host = $request->getHost();
         
-        // If tenancy is not initialized, try to initialize it
-        if (!tenancy()->initialized) {
-            // Try to resolve tenant from subdomain
-            $subdomainMiddleware = new InitializeTenancyBySubdomain();
-            $subdomainMiddleware->handle($request, $next);
+        // If accessing from central domain, skip tenant initialization
+        // This allows Filament to work for central admin panel
+        if (in_array($host, $centralDomains)) {
+            return $next($request);
         }
-
+        
+        // For tenant domains, tenancy should already be initialized
+        // by the tenant route middleware (InitializeTenancyBySubdomain)
+        // If not initialized, let the request continue anyway - Filament
+        // will handle authentication and the tenant context will be set
+        // by the route middleware if needed
+        
         return $next($request);
     }
 }
