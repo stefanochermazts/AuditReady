@@ -15,9 +15,12 @@ class EvidenceResource extends Resource
 {
     protected static ?string $model = Evidence::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-document';
-
     protected static ?int $navigationSort = 1;
+
+    public static function getNavigationIcon(): ?string
+    {
+        return 'heroicon-o-document';
+    }
 
     public static function getNavigationGroup(): ?string
     {
