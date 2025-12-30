@@ -21,3 +21,16 @@ Route::middleware(['web'])->group(function () {
     // Central admin routes (for managing tenants)
     // Will be implemented with Filament in Step 6
 });
+
+// 2FA Routes
+Route::middleware(['web', 'auth'])->prefix('2fa')->name('2fa.')->group(function () {
+    Route::get('/setup', [App\Http\Controllers\TwoFactorAuthenticationController::class, 'showSetupForm'])->name('setup');
+    Route::post('/enable', [App\Http\Controllers\TwoFactorAuthenticationController::class, 'enable'])->name('enable');
+    Route::get('/recovery-codes', [App\Http\Controllers\TwoFactorAuthenticationController::class, 'showRecoveryCodes'])->name('recovery-codes');
+    Route::post('/disable', [App\Http\Controllers\TwoFactorAuthenticationController::class, 'disable'])->name('disable');
+});
+
+Route::middleware(['web'])->prefix('2fa')->name('2fa.')->group(function () {
+    Route::get('/verify', [App\Http\Controllers\TwoFactorAuthenticationController::class, 'showVerificationForm'])->name('verify');
+    Route::post('/verify', [App\Http\Controllers\TwoFactorAuthenticationController::class, 'verify'])->name('verify.post');
+});

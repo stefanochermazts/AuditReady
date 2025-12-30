@@ -33,7 +33,24 @@ class FortifyServiceProvider extends ServiceProvider
         Fortify::updateUserProfileInformationUsing(UpdateUserProfileInformation::class);
         Fortify::updateUserPasswordsUsing(UpdateUserPassword::class);
         Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
-        Fortify::redirectUserForTwoFactorAuthenticationUsing(RedirectIfTwoFactorAuthenticatable::class);
+        
+        // Custom 2FA redirect - check if user has 2FA enabled
+        Fortify::redirectUserForTwoFactorAuthenticationUsing(function ($request) {
+            $user = $request->user();
+            
+            if ($user && $user->hasTwoFactorEnabled()) {
+                // Store login info in session for after 2FA verification
+                session(['login.id' => $user->id]);
+                session(['login.remember' => $request->boolean('remember')]);
+                
+                return redirect()->route('2fa.verify');
+            }
+            
+            // Default Fortify behavior if 2FA not enabled
+            return app(RedirectIfTwoFactorAuthenticatable::class)->handle($request, function ($request) {
+                return redirect()->intended(config('fortify.home', '/home'));
+            });
+        });
 
         RateLimiter::for('login', function (Request $request) {
             $throttleKey = Str::transliterate(Str::lower($request->input(Fortify::username())).'|'.$request->ip());
