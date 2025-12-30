@@ -130,18 +130,18 @@ class EvidenceResource extends Resource
         return auth()->user()->can('viewAny', Evidence::class);
     }
 
-    public function canCreate(): bool
+    public static function canCreate(): bool
     {
         return auth()->user()->can('create', Evidence::class);
     }
 
-    public function canEdit(): bool
+    public static function canEdit(\Illuminate\Database\Eloquent\Model $record): bool
     {
-        return auth()->user()->can('update', $this->record);
+        return auth()->user()->can('update', $record);
     }
 
-    public function canDelete(): bool
+    public static function canDelete(\Illuminate\Database\Eloquent\Model $record): bool
     {
-        return auth()->user()->can('delete', $this->record);
+        return auth()->user()->can('delete', $record);
     }
 }

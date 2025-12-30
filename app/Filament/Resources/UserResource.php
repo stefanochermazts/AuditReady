@@ -127,12 +127,12 @@ class UserResource extends Resource
         return auth()->user()->can('manage-users');
     }
 
-    public function canEdit(): bool
+    public static function canEdit(\Illuminate\Database\Eloquent\Model $record): bool
     {
         return auth()->user()->can('manage-users');
     }
 
-    public function canDelete(): bool
+    public static function canDelete(\Illuminate\Database\Eloquent\Model $record): bool
     {
         return auth()->user()->can('manage-users');
     }
