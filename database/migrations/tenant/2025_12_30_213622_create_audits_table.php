@@ -13,7 +13,20 @@ return new class extends Migration
     {
         Schema::create('audits', function (Blueprint $table) {
             $table->id();
+            $table->string('name');
+            $table->text('description')->nullable();
+            $table->enum('status', ['draft', 'in_progress', 'completed', 'archived'])->default('draft');
+            $table->date('start_date')->nullable();
+            $table->date('end_date')->nullable();
+            $table->timestamp('closed_at')->nullable();
+            $table->foreignId('created_by')->constrained('users')->onDelete('cascade');
             $table->timestamps();
+            $table->softDeletes();
+            
+            // Indexes
+            $table->index('status');
+            $table->index('created_by');
+            $table->index(['start_date', 'end_date']);
         });
     }
 
