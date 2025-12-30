@@ -73,21 +73,24 @@ class TenantCreateCommand extends Command
             
             $userId = null;
             $tenant->run(function () use ($email, $password, $name, &$userId) {
+                // Seed roles and permissions first
+                Artisan::call('db:seed', ['--class' => 'RolesAndPermissionsSeeder']);
+                
                 // Create user in tenant database
-                $userId = DB::table('users')->insertGetId([
+                $user = \App\Models\User::create([
                     'name' => 'Organization Owner',
                     'email' => $email,
                     'password' => Hash::make($password),
                     'email_verified_at' => now(),
-                    'created_at' => now(),
-                    'updated_at' => now(),
                 ]);
 
-                // Assign Organization Owner role (will be implemented in Step 5)
-                // For now, we just create the user
+                // Assign Organization Owner role
+                $user->assignRole('Organization Owner');
+                $userId = $user->id;
             });
             
             $this->info("✓ Admin user created with ID: {$userId}");
+            $this->info("✓ Organization Owner role assigned");
 
             // Step 4: Create storage directory for tenant
             $this->info('Step 4: Creating storage directory...');
