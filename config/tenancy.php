@@ -19,6 +19,7 @@ return [
     'central_domains' => [
         '127.0.0.1',
         'localhost',
+        env('APP_DOMAIN', 'auditready.local'),
     ],
 
     /**
@@ -51,7 +52,7 @@ return [
          * Tenant database names are created like this:
          * prefix + tenant_id + suffix.
          */
-        'prefix' => 'tenant',
+        'prefix' => env('TENANT_DB_PREFIX', 'auditready_tenant_'),
         'suffix' => '',
 
         /**
