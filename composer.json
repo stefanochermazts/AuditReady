@@ -8,13 +8,14 @@
     "require": {
         "php": "^8.2",
         "filament/filament": "*",
+        "firebase/php-jwt": "^7.0",
         "laravel/fortify": "*",
         "laravel/framework": "^12.0",
         "laravel/tinker": "^2.10.1",
         "pragmarx/google2fa-laravel": "^2.0",
         "spatie/laravel-backup": "^9.0",
-        "stancl/tenancy": "^3.0",
-        "spatie/laravel-permission": "^6.0"
+        "spatie/laravel-permission": "^6.0",
+        "stancl/tenancy": "^3.0"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
