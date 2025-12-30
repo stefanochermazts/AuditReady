@@ -92,6 +92,23 @@ where php
 where composer
 ```
 
+### ⚠️ Se non funziona dopo il riavvio di Cursor
+
+Se dopo aver riavviato Cursor i comandi `php` e `composer` ancora non funzionano, è necessario ricaricare manualmente il PATH nella sessione corrente del terminale:
+
+```powershell
+# Ricarica il PATH completo (sistema + utente)
+$env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+
+# Verifica
+php -v
+composer --version
+```
+
+**Perché succede?** Cursor eredita il PATH dall'ambiente in cui è stato avviato. Se Cursor era già aperto quando hai configurato il PATH, non rileverà le modifiche anche dopo il riavvio. Il comando sopra ricarica manualmente il PATH nella sessione corrente.
+
+**Soluzione permanente:** Chiudi completamente Cursor e riaprilo da Start Menu o da una nuova istanza di PowerShell/Terminal. I nuovi processi caricheranno automaticamente il PATH aggiornato.
+
 ## Percorsi Standard Laragon
 
 Laragon installa tipicamente in:

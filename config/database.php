@@ -116,6 +116,30 @@ return [
             // 'trust_server_certificate' => env('DB_TRUST_SERVER_CERTIFICATE', 'false'),
         ],
 
+        /*
+        |--------------------------------------------------------------------------
+        | Central Database Connection (Landlord)
+        |--------------------------------------------------------------------------
+        |
+        | This connection is used for the central database that stores tenant
+        | metadata. Each tenant will have its own separate database.
+        |
+        */
+        'central' => [
+            'driver' => env('CENTRAL_DB_DRIVER', 'pgsql'),
+            'url' => env('CENTRAL_DB_URL'),
+            'host' => env('CENTRAL_DB_HOST', env('DB_HOST', '127.0.0.1')),
+            'port' => env('CENTRAL_DB_PORT', env('DB_PORT', '5432')),
+            'database' => env('CENTRAL_DB_DATABASE', 'auditready_tenants'),
+            'username' => env('CENTRAL_DB_USERNAME', env('DB_USERNAME', 'postgres')),
+            'password' => env('CENTRAL_DB_PASSWORD', env('DB_PASSWORD', '')),
+            'charset' => env('CENTRAL_DB_CHARSET', 'utf8'),
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'search_path' => env('CENTRAL_DB_SEARCH_PATH', 'public'),
+            'sslmode' => env('CENTRAL_DB_SSLMODE', 'prefer'),
+        ],
+
     ],
 
     /*
