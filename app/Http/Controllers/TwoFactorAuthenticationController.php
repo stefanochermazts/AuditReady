@@ -177,7 +177,13 @@ class TwoFactorAuthenticationController extends Controller
         // Clear login session
         session()->forget(['login.id', 'login.remember']);
 
-        return redirect()->intended('/');
+        // Redirect to Filament admin panel if coming from Filament login
+        $intended = session()->pull('url.intended');
+        if ($intended && str_contains($intended, '/admin')) {
+            return redirect($intended);
+        }
+
+        return redirect()->intended('/admin');
     }
 
     /**

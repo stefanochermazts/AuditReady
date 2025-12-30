@@ -29,7 +29,7 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
-            ->login(\App\Filament\Pages\Auth\Login::class)
+            ->login()
             ->brandName('AuditReady')
             ->brandLogo(asset('images/logo.svg'))
             ->favicon(asset('favicon.ico'))
@@ -47,7 +47,7 @@ class AdminPanelProvider extends PanelProvider
                 AccountWidget::class,
             ])
             ->middleware([
-                TenantFilamentMiddleware::class, // Initialize tenant context first
+                TenantFilamentMiddleware::class, // Handle tenant context for Filament
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,
                 StartSession::class,

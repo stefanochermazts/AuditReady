@@ -22,6 +22,9 @@ Route::middleware(['web'])->group(function () {
     // Will be implemented with Filament in Step 6
 });
 
+// Filament admin panel (central, accessible from central domains)
+// Note: Filament routes are automatically registered by AdminPanelProvider
+
 // 2FA Routes
 Route::middleware(['web', 'auth'])->prefix('2fa')->name('2fa.')->group(function () {
     Route::get('/setup', [App\Http\Controllers\TwoFactorAuthenticationController::class, 'showSetupForm'])->name('setup');

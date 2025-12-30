@@ -12,16 +12,13 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        // Tenancy middleware - must be registered early
-        // The TenancyServiceProvider already handles priority, but we ensure it's in the stack
-        $middleware->web(append: [
-            \Stancl\Tenancy\Middleware\InitializeTenancyBySubdomain::class,
-        ]);
-        
         // Require 2FA for authenticated users with 2FA enabled
         $middleware->web(append: [
             \App\Http\Middleware\RequireTwoFactor::class,
         ]);
+        
+        // Note: Tenancy middleware is handled by TenancyServiceProvider
+        // and applied only to tenant routes, not global routes
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

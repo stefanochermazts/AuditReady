@@ -5,8 +5,8 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\AuditResource\Pages;
 use App\Models\Audit;
 use Filament\Forms;
-use Filament\Forms\Form;
 use Filament\Resources\Resource;
+use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -27,9 +27,9 @@ class AuditResource extends Resource
         return 'Audit Management';
     }
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form
+        return $schema
             ->schema([
                 Forms\Components\TextInput::make('name')
                     ->required()
@@ -114,7 +114,7 @@ class AuditResource extends Resource
                 Tables\Actions\Action::make('export')
                     ->label('Export')
                     ->icon('heroicon-o-arrow-down-tray')
-                    ->url(fn (Audit $record) => route('audit.export', $record))
+                    ->url(fn (Audit $record) => '#') // TODO: Implement export route in Step 7
                     ->visible(fn (Audit $record) => auth()->user()->can('export', $record)),
                 Tables\Actions\DeleteAction::make(),
             ])
@@ -157,13 +157,13 @@ class AuditResource extends Resource
         return auth()->user()->can('create', Audit::class);
     }
 
-    public function canEdit(): bool
+    public static function canEdit(\Illuminate\Database\Eloquent\Model $record): bool
     {
-        return auth()->user()->can('update', $this->record);
+        return auth()->user()->can('update', $record);
     }
 
-    public function canDelete(): bool
+    public static function canDelete(\Illuminate\Database\Eloquent\Model $record): bool
     {
-        return auth()->user()->can('delete', $this->record);
+        return auth()->user()->can('delete', $record);
     }
 }

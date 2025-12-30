@@ -5,8 +5,8 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\EvidenceResource\Pages;
 use App\Models\Evidence;
 use Filament\Forms;
-use Filament\Forms\Form;
 use Filament\Resources\Resource;
+use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -27,9 +27,9 @@ class EvidenceResource extends Resource
         return 'Evidence Management';
     }
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form
+        return $schema
             ->schema([
                 Forms\Components\Select::make('audit_id')
                     ->relationship('audit', 'name')
@@ -130,18 +130,18 @@ class EvidenceResource extends Resource
         return auth()->user()->can('viewAny', Evidence::class);
     }
 
-    public function canCreate(): bool
+    public static function canCreate(): bool
     {
         return auth()->user()->can('create', Evidence::class);
     }
 
-    public function canEdit(): bool
+    public static function canEdit(\Illuminate\Database\Eloquent\Model $record): bool
     {
-        return auth()->user()->can('update', $this->record);
+        return auth()->user()->can('update', $record);
     }
 
-    public function canDelete(): bool
+    public static function canDelete(\Illuminate\Database\Eloquent\Model $record): bool
     {
-        return auth()->user()->can('delete', $this->record);
+        return auth()->user()->can('delete', $record);
     }
 }
