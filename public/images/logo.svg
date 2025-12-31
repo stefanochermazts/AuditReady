@@ -1,0 +1,8 @@
+<svg width="220" height="48" viewBox="0 0 220 48" xmlns="http://www.w3.org/2000/svg">
+  <rect x="6" y="10" width="36" height="6" rx="3" fill="#3F7FB3"/>
+  <rect x="6" y="21" width="36" height="6" rx="3" fill="#3F7FB3"/>
+  <rect x="6" y="32" width="36" height="6" rx="3" fill="#3F7FB3"/>
+  <text x="56" y="30" font-size="20" font-family="Inter, system-ui" fill="#1D2939" font-weight="600">
+    AuditReady
+  </text>
+</svg>

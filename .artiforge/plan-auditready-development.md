@@ -103,9 +103,14 @@ Ogni Pull Request deve includere:
 | 8 | `step/8-audit-trail` | Audit trail immutabile |
 | 9 | `step/9-third-party-upload` | Upload third-party |
 | 10 | `step/10-export-audit` | Export audit |
-| 11 | `step/11-backup-dr` | Backup e disaster recovery |
-| 12 | `step/12-security-hardening` | Hardening sicurezza |
-| 13 | `step/13-documentation-cicd` | Documentazione e CI/CD |
+| 11 | `step/11-compliance-fields` | Enhancement campi compliance |
+| 12 | `step/12-enable-2fa` | Abilitazione e testing 2FA |
+| 13 | `step/13-backup-dr` | Backup e disaster recovery |
+| 14 | `step/14-advanced-reporting` | Advanced reporting e analytics |
+| 15 | `step/15-data-retention` | Data retention e lifecycle |
+| 16 | `step/16-security-hardening` | Hardening sicurezza |
+| 17 | `step/17-security-audit` | Final security audit |
+| 18 | `step/18-documentation-cicd` | Documentazione e CI/CD |
 
 ### Protezione Branch Master
 
@@ -506,7 +511,94 @@ Al completamento di tutti gli step:
 
 ---
 
-## Step 11: Configurare Strategia Backup e Disaster Recovery
+## Step 11: Enhancement Campi Compliance per Audit ed Evidence
+
+**Azione**: Aggiungere campi compliance necessari per audit ed evidenze per supportare GDPR, DORA, NIS2, ISO 27001.
+
+**Ragionamento**: I campi attuali sono insufficienti per audit complessi e compliance. Servono campi per tipo audit, standard compliance, findings, azioni correttive, validazione evidenze, riferimenti normativi.
+
+**Dettagli Implementazione**:
+- **Migrazione Audit** - Aggiungere campi:
+  - `audit_type` (enum: internal, external, certification, compliance)
+  - `compliance_standards` (json) - Array standard (ISO 27001, GDPR, DORA, NIS2, SOC 2, PCI-DSS)
+  - `scope` (text) - Ambito audit
+  - `objectives` (text) - Obiettivi
+  - `auditor_id` (foreign key) - Responsabile audit
+  - `reference_period_start` (date) - Inizio periodo riferimento
+  - `reference_period_end` (date) - Fine periodo riferimento
+  - `findings` (json) - Array findings con severity, description, affected_controls
+  - `corrective_actions` (json) - Array azioni correttive con assigned_to, due_date, status
+  - `risk_assessment` (json) - Valutazione rischi
+  - `gdpr_article_reference` (text)
+  - `dora_requirement_reference` (text)
+  - `nis2_requirement_reference` (text)
+  - `certification_body` (string)
+  - `certification_number` (string)
+  - `next_audit_date` (date)
+- **Migrazione Evidence** - Aggiungere campi:
+  - `category` (string) - Categoria (policy, procedure, incident_report, ecc.)
+  - `document_date` (date) - Data documento originale
+  - `document_type` (string) - Tipo documento
+  - `supplier` (string) - Fornitore/origine
+  - `regulatory_reference` (text) - Riferimento normativo
+  - `control_reference` (text) - Riferimento controllo interno
+  - `validation_status` (enum: pending, approved, rejected, needs_revision)
+  - `validated_by` (foreign key)
+  - `validated_at` (timestamp)
+  - `validation_notes` (text)
+  - `expiry_date` (date)
+  - `tags` (json) - Array tag per categorizzazione
+  - `notes` (text) - Note aggiuntive
+  - `confidentiality_level` (enum: public, internal, confidential, restricted)
+  - `retention_period_years` (integer)
+- **Aggiornare Modelli**: Aggiungere campi a `$fillable` e `$casts`
+- **Aggiornare Filament Resources**: 
+  - Form con tutti i nuovi campi organizzati in sezioni
+  - Table con colonne principali
+  - Filtri per compliance standards, validation status, audit type
+- **Aggiornare ExportService**: Includere tutti i nuovi campi in PDF/CSV
+- **Aggiornare Viste Export**: Template PDF/CSV con sezioni compliance
+
+**Testing**: Test creazione audit/evidence con nuovi campi. Test export con campi compliance. Test filtri e ricerca.
+
+**Git Workflow**:
+- Creare branch: `git checkout -b step/11-compliance-fields`
+- Committare progressivamente: `step/11: {descrizione}`
+- Push e creare PR: "Step 11: Enhancement Campi Compliance"
+
+---
+
+## Step 12: Abilitazione e Testing 2FA Completo
+
+**Azione**: Abilitare 2FA e testare funzionamento completo end-to-end.
+
+**Ragionamento**: La 2FA è implementata ma disabilitata. Deve essere abilitata e testata per ruoli obbligatori (Organization Owner, Audit Manager, Contributor).
+
+**Dettagli Implementazione**:
+- Abilitare middleware `RequireTwoFactor` in `AdminPanelProvider`
+- Creare pagina Filament per setup 2FA nel profilo utente (`app/Filament/Pages/Profile/TwoFactorSettings.php`)
+- Integrare QR code display in profilo utente
+- Implementare enforcement per ruoli obbligatori (middleware o policy)
+- Testare flusso completo:
+  1. Login senza 2FA → redirect setup
+  2. Setup 2FA con QR code
+  3. Verifica codice TOTP
+  4. Generazione recovery codes
+  5. Login con 2FA
+  6. Accesso dopo verifica
+- Testare recovery codes
+- Documentare processo setup per utenti
+
+**Testing**: Feature test completo flusso 2FA. Test enforcement per ruoli. Test recovery codes.
+
+**Git Workflow**:
+- Creare branch: `git checkout -b step/12-enable-2fa`
+- Committare progressivamente: `step/12: {descrizione}`
+- Push e creare PR: "Step 12: Abilitazione e Testing 2FA"
+
+---
+
+## Step 13: Configurare Strategia Backup e Disaster Recovery
 
 **Azione**: Configurare strategia backup e disaster recovery.
 
@@ -529,13 +621,90 @@ Al completamento di tutti gli step:
 **Testing**: Eseguire backup job in ambiente test e verificare file appaiono nel backup bucket. Simulare restore.
 
 **Git Workflow**:
-- Creare branch: `git checkout -b step/11-backup-dr`
-- Committare progressivamente: `step/11: {descrizione}`
-- Push e creare PR: "Step 11: Configurare Strategia Backup e Disaster Recovery"
+- Creare branch: `git checkout -b step/13-backup-dr`
+- Committare progressivamente: `step/13: {descrizione}`
+- Push e creare PR: "Step 13: Configurare Strategia Backup e Disaster Recovery"
 
 ---
 
-## Step 12: Implementare Hardening Sicurezza Completo e Compliance Checks
+## Step 14: Advanced Reporting e Analytics per Compliance
+
+**Azione**: Implementare reporting avanzato e analytics per compliance.
+
+**Ragionamento**: Fornisce visibilità su stato compliance, findings, scadenze, coverage standard per supportare decisioni e audit esterni.
+
+**Dettagli Implementazione**:
+- Dashboard compliance con widget:
+  - Audit per standard compliance (ISO 27001, GDPR, DORA, NIS2)
+  - Findings aperti per severità
+  - Azioni correttive in scadenza
+  - Evidenze in scadenza
+  - Coverage compliance per standard
+- Report Findings e Azioni Correttive:
+  - Lista findings con filtri (severity, status, audit)
+  - Tracking azioni correttive con scadenze
+  - Report chiusura findings
+- Report Scadenze:
+  - Documenti in scadenza
+  - Audit programmati
+  - Azioni correttive in scadenza
+- Report Coverage Compliance:
+  - Coverage per standard (quali controlli coperti)
+  - Gap analysis
+  - Evidenze per controllo
+- Export avanzato con filtri multipli
+- Schedulazione report automatici (email settimanali/mensili)
+
+**Testing**: Test generazione report. Test filtri. Test export avanzato.
+
+**Git Workflow**:
+- Creare branch: `git checkout -b step/14-advanced-reporting`
+- Committare progressivamente: `step/14: {descrizione}`
+- Push e creare PR: "Step 14: Advanced Reporting e Analytics"
+
+---
+
+## Step 15: Data Retention e Lifecycle Management
+
+**Azione**: Implementare politiche di retention e lifecycle management.
+
+**Ragionamento**: Supporta compliance GDPR (right to erasure), DORA (retention requirements), e gestione automatica del ciclo di vita dei dati.
+
+**Dettagli Implementazione**:
+- Job per notifiche scadenze:
+  - Notifica scadenze documenti (30 giorni prima)
+  - Notifica scadenze audit
+  - Notifica azioni correttive in scadenza
+- Job per archiviazione automatica:
+  - Archivia audit chiusi dopo X anni
+  - Archivia evidenze scadute (se retention policy lo permette)
+- Politiche retention configurabili per tenant:
+  - Retention audit (default 7 anni)
+  - Retention evidenze (default 7 anni)
+  - Retention audit logs (default 10 anni)
+  - Configurazione per tipo documento
+- Audit log retention policy:
+  - Log immutabili ma con retention configurabile
+  - Archiviazione log vecchi
+- GDPR right to erasure:
+  - Endpoint per richiesta cancellazione dati personali
+  - Verifica vincoli retention (non cancellare se in retention period)
+  - Log cancellazione per audit trail
+- Job schedulati per:
+  - Verifica scadenze giornaliera
+  - Archiviazione mensile
+  - Pulizia log (se configurato)
+
+**Testing**: Test notifiche scadenze. Test archiviazione. Test GDPR erasure con vincoli.
+
+**Git Workflow**:
+- Creare branch: `git checkout -b step/15-data-retention`
+- Committare progressivamente: `step/15: {descrizione}`
+- Push e creare PR: "Step 15: Data Retention e Lifecycle Management"
+
+---
+
+## Step 16: Implementare Hardening Sicurezza Completo e Compliance Checks
 
 **Azione**: Implementare hardening sicurezza completo e compliance checks.
 
@@ -561,7 +730,50 @@ Al completamento di tutti gli step:
 
 ---
 
-## Step 13: Finalizzare Documentazione, Code Quality Checks e Pipeline CI/CD
+## Step 17: Final Security Audit e Penetration Testing
+
+**Azione**: Eseguire audit sicurezza finale e penetration testing.
+
+**Ragionamento**: Verifica che tutte le misure di sicurezza siano implementate correttamente e identifica vulnerabilità residue.
+
+**Dettagli Implementazione**:
+- Security review codice:
+  - Review crittografia e key management
+  - Review autenticazione e autorizzazione
+  - Review input validation
+  - Review SQL injection prevention
+  - Review XSS prevention
+- Vulnerability scanning:
+  - Scan dipendenze (composer audit)
+  - Scan codice con strumenti statici
+  - Scan configurazione server
+- Penetration testing:
+  - Test accesso non autorizzato
+  - Test cross-tenant access
+  - Test privilege escalation
+  - Test injection attacks
+  - Test session management
+- Compliance checklist:
+  - GDPR compliance checklist
+  - DORA compliance checklist
+  - NIS2 compliance checklist
+  - ISO 27001 controls mapping
+- Documentazione security posture:
+  - Security assessment report
+  - Vulnerability report
+  - Remediation plan
+  - Compliance status report
+
+**Testing**: Eseguire tutti i test di sicurezza. Documentare findings e remediation.
+
+**Git Workflow**:
+- Creare branch: `git checkout -b step/17-security-audit`
+- Committare progressivamente: `step/17: {descrizione}`
+- Push e creare PR: "Step 17: Final Security Audit"
+
+---
+
+## Step 18: Finalizzare Documentazione, Code Quality Checks e Pipeline CI/CD
 
 **Azione**: Finalizzare documentazione, code quality checks e pipeline CI/CD.
 

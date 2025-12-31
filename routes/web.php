@@ -1,7 +1,6 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
 
 /*
 |--------------------------------------------------------------------------
@@ -18,6 +17,11 @@ Route::middleware(['web'])->group(function () {
         return view('welcome');
     });
     
+    // Redirect /login to Filament login page
+    Route::get('/login', function () {
+        return redirect()->route('filament.admin.auth.login');
+    })->name('login');
+    
     // Central admin routes (for managing tenants)
     // Will be implemented with Filament in Step 6
 });
@@ -33,6 +37,7 @@ Route::middleware(['web', 'auth'])->prefix('2fa')->name('2fa.')->group(function 
     Route::post('/disable', [App\Http\Controllers\TwoFactorAuthenticationController::class, 'disable'])->name('disable');
 });
 
+// 2FA verification routes - tenant initialization handled by Tenant2FAMiddleware (in bootstrap/app.php)
 Route::middleware(['web'])->prefix('2fa')->name('2fa.')->group(function () {
     Route::get('/verify', [App\Http\Controllers\TwoFactorAuthenticationController::class, 'showVerificationForm'])->name('verify');
     Route::post('/verify', [App\Http\Controllers\TwoFactorAuthenticationController::class, 'verify'])->name('verify.post');

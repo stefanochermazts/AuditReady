@@ -12,7 +12,6 @@ class AuditPolicy
      */
     public function viewAny(User $user): bool
     {
-        // All authenticated users with view-audit permission can view audits
         return $user->hasPermissionTo('view-audit');
     }
 

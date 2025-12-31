@@ -78,7 +78,32 @@ class TenancyServiceProvider extends ServiceProvider
             ],
 
             Events\BootstrappingTenancy::class => [],
-            Events\TenancyBootstrapped::class => [],
+            Events\TenancyBootstrapped::class => [
+                // Create storage directories after tenancy is bootstrapped
+                // (after FilesystemTenancyBootstrapper has modified storage_path())
+                function (Events\TenancyBootstrapped $event) {
+                    $tenantStoragePath = storage_path();
+                    
+                    // Create all necessary subdirectories
+                    $directories = [
+                        $tenantStoragePath . '/app',
+                        $tenantStoragePath . '/app/private',
+                        $tenantStoragePath . '/app/public',
+                        $tenantStoragePath . '/framework',
+                        $tenantStoragePath . '/framework/cache',
+                        $tenantStoragePath . '/framework/cache/data',
+                        $tenantStoragePath . '/framework/sessions',
+                        $tenantStoragePath . '/framework/views',
+                        $tenantStoragePath . '/logs',
+                    ];
+                    
+                    foreach ($directories as $directory) {
+                        if (!is_dir($directory)) {
+                            mkdir($directory, 0755, true);
+                        }
+                    }
+                },
+            ],
             Events\RevertingToCentralContext::class => [],
             Events\RevertedToCentralContext::class => [],
 
