@@ -32,7 +32,7 @@ class ExportController extends Controller
         }
 
         // Dispatch export job
-        ExportAuditJob::dispatch($audit->id, $format, auth()->id());
+        ExportAuditJob::dispatch($audit->id, $format, auth()->id(), tenant('id'));
 
         return redirect()->back()->with('success', "Export in {$format} format has been queued. You will receive an email when it's ready.");
     }

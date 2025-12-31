@@ -250,7 +250,8 @@ class AuditResource extends Resource
                         \App\Jobs\ExportAuditJob::dispatch(
                             $record->id,
                             $data['format'],
-                            auth()->id()
+                            auth()->id(),
+                            tenant('id')
                         );
                         
                         \Filament\Notifications\Notification::make()
