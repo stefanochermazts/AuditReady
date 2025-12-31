@@ -271,6 +271,16 @@
                                 <td class="key">Checksum</td>
                                 <td class="mono break-all">{{ $evidence->checksum ?: 'N/A' }}</td>
                             </tr>
+                            @if(isset($evidenceLinks[$evidence->id]))
+                            <tr>
+                                <td class="key">Download</td>
+                                <td>
+                                    <a href="{{ $evidenceLinks[$evidence->id] }}" style="color: #3F7FB3; text-decoration: underline;">
+                                        Download evidenza
+                                    </a>
+                                </td>
+                            </tr>
+                            @endif
                         </tbody>
                     </table>
                 </div>

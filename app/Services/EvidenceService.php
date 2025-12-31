@@ -100,24 +100,38 @@ class EvidenceService
      */
     public function download(Evidence $evidence, string $tenantId): StreamedResponse
     {
-        // Get encrypted content from storage
-        $encryptedContent = $this->storageService->get($evidence->stored_path);
+        // Get content from storage
+        $content = $this->storageService->get($evidence->stored_path);
         
-        if ($encryptedContent === null) {
+        if ($content === null) {
             throw new RuntimeException('Evidence file not found in storage');
         }
         
-        // Decrypt content
-        $decryptedContent = $this->encryptionService->decrypt(
-            $encryptedContent,
-            $evidence->encrypted_key,
-            $evidence->iv
-        );
-        
-        // Verify checksum
-        $calculatedChecksum = $this->encryptionService->checksum($decryptedContent);
-        if (!$this->encryptionService->verifyChecksum($decryptedContent, $evidence->checksum)) {
-            throw new RuntimeException('Checksum verification failed - file may be corrupted');
+        // Check if evidence is encrypted (has encrypted_key and iv)
+        // If not, assume it's plaintext (legacy evidence created before encryption was implemented)
+        if (empty($evidence->encrypted_key) || empty($evidence->iv)) {
+            \Log::info("Evidence {$evidence->id} appears to be unencrypted (legacy), returning content as-is");
+            
+            // Verify checksum if available
+            if (!empty($evidence->checksum)) {
+                if (!$this->encryptionService->verifyChecksum($content, $evidence->checksum)) {
+                    throw new RuntimeException('Checksum verification failed - file may be corrupted');
+                }
+            }
+            
+            $decryptedContent = $content;
+        } else {
+            // Decrypt content
+            $decryptedContent = $this->encryptionService->decrypt(
+                $content,
+                $evidence->encrypted_key,
+                $evidence->iv
+            );
+            
+            // Verify checksum
+            if (!empty($evidence->checksum) && !$this->encryptionService->verifyChecksum($decryptedContent, $evidence->checksum)) {
+                throw new RuntimeException('Checksum verification failed - file may be corrupted');
+            }
         }
         
         // Return streamed response
@@ -125,8 +139,54 @@ class EvidenceService
             echo $decryptedContent;
         }, $evidence->filename, [
             'Content-Type' => $evidence->mime_type,
-            'Content-Length' => $evidence->size,
+            'Content-Length' => strlen($decryptedContent), // Use actual decrypted content length
         ]);
+    }
+
+    /**
+     * Get decrypted evidence content as string (for export purposes)
+     *
+     * @param Evidence $evidence
+     * @return string Decrypted file content
+     * @throws RuntimeException
+     */
+    public function getDecryptedContent(Evidence $evidence): string
+    {
+        // Get content from storage
+        $content = $this->storageService->get($evidence->stored_path);
+        
+        if ($content === null) {
+            throw new RuntimeException('Evidence file not found in storage');
+        }
+        
+        // Check if evidence is encrypted (has encrypted_key and iv)
+        // If not, assume it's plaintext (legacy evidence created before encryption was implemented)
+        if (empty($evidence->encrypted_key) || empty($evidence->iv)) {
+            \Log::info("Evidence {$evidence->id} appears to be unencrypted (legacy), returning content as-is");
+            
+            // Verify checksum if available
+            if (!empty($evidence->checksum)) {
+                if (!$this->encryptionService->verifyChecksum($content, $evidence->checksum)) {
+                    throw new RuntimeException('Checksum verification failed - file may be corrupted');
+                }
+            }
+            
+            return $content;
+        }
+        
+        // Decrypt content
+        $decryptedContent = $this->encryptionService->decrypt(
+            $content,
+            $evidence->encrypted_key,
+            $evidence->iv
+        );
+        
+        // Verify checksum
+        if (!empty($evidence->checksum) && !$this->encryptionService->verifyChecksum($decryptedContent, $evidence->checksum)) {
+            throw new RuntimeException('Checksum verification failed - file may be corrupted');
+        }
+        
+        return $decryptedContent;
     }
 
     /**

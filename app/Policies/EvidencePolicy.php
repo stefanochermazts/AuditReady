@@ -89,4 +89,17 @@ class EvidencePolicy
         // Only Organization Owner can permanently delete
         return $user->hasRole('Organization Owner');
     }
+
+    /**
+     * Determine whether the user can download the evidence file.
+     * Only Organization Owner or Audit Manager can download.
+     *
+     * @param User $user
+     * @param Evidence $evidence
+     * @return bool
+     */
+    public function download(User $user, Evidence $evidence): bool
+    {
+        return $user->hasAnyRole(['Organization Owner', 'Audit Manager']);
+    }
 }

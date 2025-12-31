@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\URL;
 /**
  * ExportAuditJob - Queued job for exporting audit data
  * 
- * This job handles asynchronous export of audit data to PDF or CSV format.
+ * This job handles asynchronous export of audit data to PDF, CSV, or ZIP format.
  * The exported file is encrypted and stored, then the user is notified via email.
  */
 class ExportAuditJob implements ShouldQueue
@@ -44,7 +44,7 @@ class ExportAuditJob implements ShouldQueue
      */
     public function __construct(
         public int $auditId,
-        public string $format, // 'pdf' or 'csv'
+        public string $format, // 'pdf', 'csv', or 'zip'
         public int $userId, // User who requested the export
         public ?string $tenantId = null, // Tenant context for URL generation in queue workers
     ) {
@@ -70,6 +70,7 @@ class ExportAuditJob implements ShouldQueue
             $filePath = match ($this->format) {
                 'pdf' => $exportService->exportToPdf($audit),
                 'csv' => $exportService->exportToCsv($audit),
+                'zip' => $exportService->exportToZip($audit),
                 default => throw new \InvalidArgumentException("Invalid format: {$this->format}"),
             };
 

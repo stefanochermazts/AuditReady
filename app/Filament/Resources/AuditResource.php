@@ -242,6 +242,7 @@ class AuditResource extends Resource
                             ->options([
                                 'pdf' => 'PDF',
                                 'csv' => 'CSV',
+                                'zip' => 'ZIP (PDF + Evidenze)',
                             ])
                             ->default('pdf')
                             ->required(),
