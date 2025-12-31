@@ -47,6 +47,13 @@ Route::middleware([
     Route::post('audits/{audit}/export', [\App\Http\Controllers\ExportController::class, 'requestExport'])->name('audits.export');
     Route::get('exports/download/{file}', [\App\Http\Controllers\ExportController::class, 'download'])->name('exports.download');
     
+    // Evidence download routes (requires authentication)
+    Route::middleware(['auth'])->group(function () {
+        // Evidence download route (signature optional - if present, it's verified; if not, only auth is checked)
+        Route::get('evidence/{evidence}/download', [\App\Http\Controllers\EvidenceController::class, 'download'])
+            ->name('evidence.download');
+    });
+    
     // Tenant-specific routes will be added here
     // Filament admin panel will be accessible at /admin for each tenant
 });

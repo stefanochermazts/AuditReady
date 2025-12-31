@@ -14,6 +14,10 @@ use Illuminate\Support\Facades\Storage;
  */
 class ExportController extends Controller
 {
+    public function __construct(
+        private ExportService $exportService
+    ) {
+    }
     /**
      * Request an export of an audit
      *
@@ -27,7 +31,7 @@ class ExportController extends Controller
 
         $format = $request->input('format', 'pdf');
         
-        if (!in_array($format, ['pdf', 'csv'])) {
+        if (!in_array($format, ['pdf', 'csv', 'zip'])) {
             return redirect()->back()->withErrors(['format' => 'Invalid export format']);
         }
 
@@ -71,15 +75,15 @@ class ExportController extends Controller
         }
 
         // Decrypt and download
-        $exportService = new ExportService();
         $encryptedContent = $storageService->get($filePath);
-        $decryptedContent = $exportService->decryptContent($encryptedContent);
+        $decryptedContent = $this->exportService->decryptContent($encryptedContent);
 
         // Determine file extension and MIME type
         $extension = pathinfo($filePath, PATHINFO_EXTENSION);
         $mimeTypes = [
             'pdf' => 'application/pdf',
             'csv' => 'text/csv',
+            'zip' => 'application/zip',
         ];
         $mimeType = $mimeTypes[$extension] ?? 'application/octet-stream';
 
