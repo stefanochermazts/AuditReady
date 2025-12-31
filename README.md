@@ -1,16 +1,16 @@
-# AuditReady 🔒
+# AuditReady
 
-**Piattaforma operativa di supporto all'audit con focus su sicurezza, privacy e compliance**
+**Piattaforma operativa di supporto all’audit con focus su sicurezza, privacy e compliance**
 
-[![Laravel](https://img.shields.io/badge/Laravel-12.0-red.svg)](https://laravel.com)
-[![PHP](https://img.shields.io/badge/PHP-8.2+-blue.svg)](https://php.net)
+[![Laravel](https://img.shields.io/badge/Laravel-12.44.0-red.svg)](https://laravel.com)
+[![PHP](https://img.shields.io/badge/PHP-8.3+-blue.svg)](https://php.net)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-## 📋 Panoramica
+## Panoramica
 
 AuditReady è una piattaforma multi-tenant progettata per supportare organizzazioni nella gestione sicura di evidenze per processi di audit. La piattaforma garantisce isolamento completo dei dati, crittografia end-to-end e compliance con GDPR, DORA e NIS2.
 
-### 🎯 Cosa fa AuditReady
+### Cosa fa AuditReady
 
 AuditReady:
 - ✅ **Archivia** evidenze in modo sicuro e strutturato
@@ -21,7 +21,7 @@ AuditReady:
 - ✅ **Cifra** tutti i file con crittografia AES-256
 - ✅ **Traccia** tutte le operazioni con audit trail immutabile
 
-### ❌ Cosa NON fa AuditReady
+### Cosa NON fa AuditReady
 
 AuditReady **NON**:
 - ❌ Valuta la conformità
@@ -31,32 +31,32 @@ AuditReady **NON**:
 
 Questa distinzione è fondamentale per ridurre il rischio legale e semplificare la compliance.
 
-## ✨ Caratteristiche Principali
+## Caratteristiche principali
 
-### 🔐 Sicurezza e Privacy
+### Sicurezza e privacy
 
 - **Multi-Tenant Isolato**: Ogni organizzazione ha database separato (isolamento fisico)
 - **Crittografia End-to-End**: File cifrati con AES-256 prima dello storage
 - **2FA Obbligatoria**: Autenticazione a due fattori TOTP (compatibile Microsoft Authenticator)
-- **RBAC Granulare**: 5 ruoli con permessi specifici (Least Privilege)
+- **RBAC Granulare**: 5 ruoli con permessi specifici (Least Privilege) tramite Spatie Permission
 - **Audit Trail Immutabile**: Log append-only con firma HMAC per integrità
 - **HTTPS Obbligatorio**: TLS 1.2+ con HSTS
 
-### 📦 Gestione Evidenze
+### Gestione evidenze
 
 - **Versioning Completo**: Ogni modifica genera nuova versione, storico accessibile
 - **Integrità Garantita**: Checksum SHA-256 per verifica integrità file
-- **Upload Sicuro**: Validazione file, antivirus scanning, rate limiting
+- **Upload Sicuro**: Validazione file, limiti dimensione, storage isolato per tenant
 - **Export Asincrono**: Generazione PDF/CSV via queue system
 
-### 🏢 Multi-Tenancy
+### Multi-tenancy (multi-database)
 
 - **Isolamento Completo**: Database separato per ogni tenant
 - **Creazione Automatizzata**: Comando artisan per creare nuovo tenant (~30 secondi)
 - **Migrazioni Centralizzate**: Esecuzione migrazioni su tutti i tenant
 - **Backup Mirati**: Backup/restore per singolo tenant
 
-### 💾 Storage Flessibile
+### Storage flessibile (provider-agnostic, S3-compatible)
 
 - **Provider-Agnostic**: Supporto multipli provider S3-compatible
   - MinIO (self-hosted, default)
@@ -67,42 +67,44 @@ Questa distinzione è fondamentale per ridurre il rischio legale e semplificare 
   - Storage locale (sviluppo)
 - **Configurazione via Environment**: Cambio provider senza modificare codice
 
-### 🎨 Interfaccia Moderna
+### Interfaccia (Filament Admin Panel + “Enterprise Audit” UI)
 
-- **Filament 3.x**: Admin panel moderno e intuitivo
+- **Filament 4.4.0**: Admin panel moderno e intuitivo
 - **Livewire**: Componenti reattivi senza JavaScript complesso
-- **Responsive**: Interfaccia ottimizzata per desktop e mobile
-- **Accessibile**: Componenti UI accessibili out-of-the-box
+- **Enterprise Audit theme**: palette neutral + densità informativa + focus states accessibili
+- **Login & 2FA verify coerenti**: pagine auth “boxed” e allineate al tema
+- **Sidebar più densa**: più stretta, collassabile (icone) e fully-collapsible su desktop
+- **Preferenza utente**: stato sidebar (aperta/chiusa) salvato in `localStorage`
 
-## 🛠 Stack Tecnologico
+## Stack tecnologico
 
 ### Backend
-- **Laravel 12.0** - Framework PHP
-- **PHP 8.2+** - Linguaggio di programmazione
-- **PostgreSQL/MySQL** - Database (produzione)
-- **SQLite** - Database (sviluppo)
+- **Laravel 12.x**
+- **PHP 8.3+**
+- **PostgreSQL** (produzione)
+- **SQLite** (dev)
 
 ### Frontend
-- **Filament 3.x** - Admin panel
-- **Livewire 3.x** - Componenti reattivi
-- **Tailwind CSS 4.0** - Framework CSS
-- **Vite 7.0** - Build tool
+- **Filament Admin Panel 4.4.0**
+- **Livewire 3.x**
+- **Tailwind CSS 4**
+- **Vite 7**
 
 ### Sicurezza
-- **Laravel Fortify** - Autenticazione
-- **Google2FA** - 2FA TOTP (compatibile Microsoft Authenticator)
-- **Spatie Permission** - RBAC
-- **AES-256** - Crittografia file
+- **Laravel Fortify** (auth)
+- **pragmarx/google2fa-laravel** + **pragmarx/google2fa-qrcode** (TOTP 2FA, Microsoft Authenticator)
+- **spatie/laravel-permission** (RBAC)
+- **AES-256** (crittografia applicativa file)
 
-### Multi-Tenancy
-- **Tenancy for Laravel** - Gestione multi-database
+### Multi-tenancy
+- **stancl/tenancy** (multi-database, subdomain resolution)
 
 ### Storage
 - **Flysystem** - Astrazione storage
 - **MinIO** - Self-hosted S3-compatible (default)
 - **AWS S3** - Cloud storage (opzionale)
 
-## 📚 Documentazione
+## Documentazione
 
 La documentazione completa è disponibile nella cartella `docs/`:
 
@@ -114,15 +116,15 @@ La documentazione completa è disponibile nella cartella `docs/`:
 - **[Strategia 2FA](docs/2fa-microsoft-authenticator-strategy.md)** - Autenticazione a due fattori
 - **[Analisi Funzionale](documents/analisi-funzionale.md)** - Requisiti e specifiche
 
-## 🚀 Requisiti
+## Requisiti
 
-- PHP >= 8.2
+- PHP >= 8.3
 - Composer
 - Node.js >= 18.x e NPM
-- Database: PostgreSQL 13+ / MySQL 8+ / SQLite (dev)
+- Database: PostgreSQL 13+ / SQLite (dev)
 - Storage: MinIO (produzione) o provider S3-compatible
 
-## 📦 Installazione
+## Installazione
 
 ### 1. Clona il repository
 
@@ -150,15 +152,15 @@ php artisan key:generate
 Modifica `.env` con le tue credenziali database:
 
 ```env
-DB_CONNECTION=mysql
+DB_CONNECTION=pgsql
 DB_HOST=127.0.0.1
-DB_PORT=3306
+DB_PORT=5432
 DB_DATABASE=auditready
-DB_USERNAME=root
-DB_PASSWORD=
+DB_USERNAME=postgres
+DB_PASSWORD=secret
 ```
 
-### 5. Esegui migrazioni
+### 5. Esegui migrazioni (landlord/central)
 
 ```bash
 php artisan migrate
@@ -178,7 +180,7 @@ php artisan serve
 
 L'applicazione sarà disponibile su `http://localhost:8000`
 
-## 🔧 Configurazione
+## Configurazione
 
 ### Storage Provider
 
@@ -200,7 +202,19 @@ php artisan tenant:create "Nome Cliente" "cliente.auditready.com"
 
 Vedi [Strategia Multi-Database](docs/multi-database-tenant-strategy.md) per dettagli.
 
-## 🧪 Testing
+#### Migrazioni tenant
+
+Per applicare le migrazioni ai tenant:
+
+```bash
+# Tutti i tenant (può fallire se esistono tenant con DB mancante)
+php artisan tenants:migrate
+
+# Un tenant specifico (consigliato in dev)
+php artisan tenants:migrate --tenants=<TENANT_UUID>
+```
+
+## Testing
 
 ```bash
 # Esegui tutti i test
@@ -210,7 +224,7 @@ php artisan test
 php artisan test --coverage
 ```
 
-## 📋 Ruoli Utente
+## Ruoli utente
 
 AuditReady supporta 5 ruoli con permessi specifici:
 
@@ -222,7 +236,7 @@ AuditReady supporta 5 ruoli con permessi specifici:
 | **Viewer** | Accesso read-only a evidenze |
 | **External Uploader** | Upload limitato via API, nessuna visualizzazione |
 
-## 🔒 Compliance e Sicurezza
+## Compliance e sicurezza
 
 AuditReady è progettato per essere compliant con:
 
@@ -238,13 +252,13 @@ AuditReady è progettato per essere compliant con:
 - **Least Privilege**: Accesso minimo necessario
 - **Segregation of Duties**: Separazione responsabilità
 
-## 📊 Stato del Progetto
+## Stato del progetto
 
 🚧 **In Sviluppo** - Il progetto è attualmente in fase di sviluppo attivo.
 
 Vedi [Piano di Sviluppo](.artiforge/plan-auditready-development.md) per lo stato attuale.
 
-## 🤝 Contribuire
+## Contribuire
 
 Le contribuzioni sono benvenute! Per contribuire:
 
@@ -261,22 +275,22 @@ Il progetto utilizza:
 - **PSR-12** coding standards
 - **PHPUnit** per testing
 
-## 📝 License
+## License
 
 Questo progetto è rilasciato sotto licenza [MIT](LICENSE).
 
-## 👥 Autori
+## Autori
 
 - **Stefano Chermaz** - [GitHub](https://github.com/stefanochermazts)
 
-## 🙏 Ringraziamenti
+## Ringraziamenti
 
 - [Laravel](https://laravel.com) - Framework PHP
 - [Filament](https://filamentphp.com) - Admin panel
 - [Spatie](https://spatie.be) - Pacchetti Laravel di qualità
-- [Tenancy for Laravel](https://tenancyforlaravel.com) - Multi-tenancy
+- [stancl/tenancy](https://tenancyforlaravel.com) - Multi-tenancy
 
-## 📞 Supporto
+## Supporto
 
 Per domande o supporto:
 - Apri una [Issue](https://github.com/stefanochermazts/AuditReady/issues)
