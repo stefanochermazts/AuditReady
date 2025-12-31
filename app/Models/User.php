@@ -55,7 +55,10 @@ class User extends Authenticatable
      */
     public function hasTwoFactorEnabled(): bool
     {
-        return !empty($this->two_factor_secret);
+        // 2FA should be considered enabled only after it has been confirmed.
+        // We intentionally check the raw attribute to avoid decrypting secrets here.
+        return !empty($this->getRawOriginal('two_factor_secret'))
+            && !empty($this->two_factor_confirmed_at);
     }
 
     /**

@@ -4,17 +4,41 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Stancl\Tenancy\Middleware\InitializeTenancyBySubdomain;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Middleware to handle tenant context for Filament requests
+ * Middleware to handle tenant context for Filament panel requests
  * 
- * For central domains, Filament works without tenant context.
- * For tenant domains, tenancy should already be initialized by
- * the tenant route middleware stack.
+ * This middleware MUST be the FIRST in the Filament middleware stack
+ * to ensure tenant initialization happens BEFORE session starts.
+ * 
+ * Flow for Filament requests:
+ * 1. TenantFilamentMiddleware (this) - identifies tenant, switches DB
+ * 2. EncryptCookies - encrypts/decrypts cookies
+ * 3. StartSession - starts/reads session with stable tenant context
+ * 4. VerifyCsrfToken - validates CSRF with stable session ID
+ * 5. ... rest of Filament middleware
  */
 class TenantFilamentMiddleware
 {
+    /**
+     * Central domains that should NOT trigger tenant initialization
+     */
+    protected array $centralDomains;
+
+    /**
+     * The tenant initialization middleware from stancl/tenancy
+     */
+    protected InitializeTenancyBySubdomain $tenancyMiddleware;
+
+    public function __construct()
+    {
+        $this->centralDomains = config('tenancy.central_domains', []);
+        $this->tenancyMiddleware = app(InitializeTenancyBySubdomain::class);
+    }
+
     /**
      * Handle an incoming request.
      *
@@ -22,23 +46,49 @@ class TenantFilamentMiddleware
      */
     public function handle(Request $request, Closure $next): Response
     {
-        // Check if we're accessing from a central domain
-        // If so, Filament should work without tenant context (for central admin)
-        $centralDomains = config('tenancy.central_domains', []);
         $host = $request->getHost();
         
-        // If accessing from central domain, skip tenant initialization
-        // This allows Filament to work for central admin panel
-        if (in_array($host, $centralDomains)) {
+        // Skip tenant initialization for central domains
+        if ($this->isCentralDomain($host)) {
             return $next($request);
         }
         
-        // For tenant domains, tenancy should already be initialized
-        // by the tenant route middleware (InitializeTenancyBySubdomain)
-        // If not initialized, let the request continue anyway - Filament
-        // will handle authentication and the tenant context will be set
-        // by the route middleware if needed
+        // For tenant domains (subdomains), initialize tenancy
+        // This MUST happen before EncryptCookies and StartSession
+        try {
+            // If tenant is already initialized (by global TenantInitialization),
+            // just proceed. Otherwise, initialize it now.
+            if (tenancy()->initialized) {
+                return $next($request);
+            }
+            
+            // Delegate to stancl/tenancy's built-in middleware
+            return $this->tenancyMiddleware->handle($request, $next);
+        } catch (\Throwable $e) {
+            Log::error('Filament tenant initialization failed', [
+                'host' => $host,
+                'path' => $request->path(),
+                'error' => $e->getMessage(),
+            ]);
+            
+            abort(404, 'Tenant not found');
+        }
+    }
+
+    /**
+     * Check if the given host is a central domain
+     */
+    protected function isCentralDomain(string $host): bool
+    {
+        $hostWithoutPort = explode(':', $host)[0];
         
-        return $next($request);
+        foreach ($this->centralDomains as $centralDomain) {
+            $centralDomainWithoutPort = explode(':', $centralDomain)[0];
+            if ($hostWithoutPort === $centralDomainWithoutPort) {
+                return true;
+            }
+        }
+        
+        return false;
     }
 }

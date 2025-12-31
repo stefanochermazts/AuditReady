@@ -6,7 +6,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
-use PragmaRX\Google2FA\Google2FA;
+use PragmaRX\Google2FAQRCode\Google2FA;
+use PragmaRX\Google2FAQRCode\QRCode\Bacon;
+use BaconQrCode\Renderer\Image\SvgImageBackEnd;
 
 class TwoFactorAuthenticationController extends Controller
 {
@@ -14,7 +16,10 @@ class TwoFactorAuthenticationController extends Controller
 
     public function __construct()
     {
-        $this->google2fa = new Google2FA();
+        // Use QRCode version with SVG backend for inline QR code generation
+        $this->google2fa = new Google2FA(
+            new Bacon(new SvgImageBackEnd())
+        );
     }
 
     /**
@@ -45,7 +50,9 @@ class TwoFactorAuthenticationController extends Controller
         $qrCodeSvg = $this->google2fa->getQRCodeInline(
             config('app.name', 'AuditReady'),
             $user->email,
-            $user->two_factor_secret
+            $user->two_factor_secret,
+            200, // size
+            'utf-8' // encoding
         );
 
         return view('auth.two-factor.setup', [
@@ -110,19 +117,51 @@ class TwoFactorAuthenticationController extends Controller
     }
 
     /**
-     * Show 2FA verification form (during login)
+     * Show 2FA verification form (during login or for already authenticated users)
      */
-    public function showVerificationForm()
+    public function showVerificationForm(Request $request)
     {
+        // If user is already authenticated, allow verification
+        if (Auth::check()) {
+            $user = Auth::user();
+            if (!$user->hasTwoFactorEnabled()) {
+                return redirect()->route('filament.admin.auth.login');
+            }
+            
+            return view('auth.two-factor.verify');
+        }
+        
+        // If not authenticated but we have 2fa_user_id in session or cookie, try to retrieve user
+        // This happens when tenant initialization causes authentication to be lost
+        // Cookie persists across tenant initialization, session might not
+        // Try session first, then cookie
+        $userId = session('2fa_user_id');
+        if (!$userId) {
+            $userId = $request->cookie('2fa_user_id');
+        }
+        if ($userId) {
+            try {
+                $user = Auth::getProvider()->retrieveById($userId);
+                if ($user && $user->hasTwoFactorEnabled()) {
+                    // Re-authenticate the user
+                    Auth::login($user);
+                    return view('auth.two-factor.verify');
+                }
+            } catch (\Exception $e) {
+                // Ignore errors, fall through to login redirect
+            }
+        }
+
+        // For login flow, require login.id
         if (!session('login.id')) {
-            return redirect()->route('login');
+            return redirect()->route('filament.admin.auth.login');
         }
 
         return view('auth.two-factor.verify');
     }
 
     /**
-     * Verify 2FA code during login
+     * Verify 2FA code during login or for already authenticated users
      */
     public function verify(Request $request)
     {
@@ -130,15 +169,39 @@ class TwoFactorAuthenticationController extends Controller
             'code' => ['required', 'string', 'size:6'],
         ]);
 
-        $userId = session('login.id');
-        if (!$userId) {
-            return redirect()->route('login');
+        // If user is already authenticated, use authenticated user
+        if (Auth::check()) {
+            $user = Auth::user();
+            $isLoginFlow = false;
+        } elseif (session('2fa_user_id') || $request->cookie('2fa_user_id')) {
+            // If not authenticated but we have 2fa_user_id in session or cookie, retrieve user
+            $userId = session('2fa_user_id') ?? $request->cookie('2fa_user_id');
+            
+            try {
+                $user = Auth::getProvider()->retrieveById($userId);
+                if ($user && $user->hasTwoFactorEnabled()) {
+                    // Re-authenticate the user
+                    Auth::login($user);
+                    $isLoginFlow = false;
+                } else {
+                    return redirect()->route('filament.admin.auth.login');
+                }
+            } catch (\Exception $e) {
+                return redirect()->route('filament.admin.auth.login');
+            }
+        } else {
+            // For login flow, require login.id
+            $userId = session('login.id');
+            if (!$userId) {
+                return redirect()->route('filament.admin.auth.login');
+            }
+
+            $user = Auth::getProvider()->retrieveById($userId);
+            $isLoginFlow = true;
         }
 
-        $user = Auth::getProvider()->retrieveById($userId);
-
         if (!$user || !$user->hasTwoFactorEnabled()) {
-            return redirect()->route('login');
+            return redirect()->route('filament.admin.auth.login');
         }
 
         // First check if it's a recovery code
@@ -154,6 +217,7 @@ class TwoFactorAuthenticationController extends Controller
             $valid = true;
         } else {
             // Verify the TOTP code
+            // The secret is automatically decrypted by the model accessor
             $valid = $this->google2fa->verifyKey(
                 $user->two_factor_secret,
                 $code
@@ -164,26 +228,83 @@ class TwoFactorAuthenticationController extends Controller
             return back()->withErrors(['code' => 'Il codice inserito non è valido. Assicurati di usare il codice più recente da Microsoft Authenticator o un recovery code valido.']);
         }
 
-        if (!$valid) {
-            return back()->withErrors(['code' => 'Il codice inserito non è valido.']);
-        }
-
-        // Mark 2FA as verified
+        // Mark 2FA as verified in both session and cookie
+        // Cookie persists across tenant initialization, session might not
         session(['2fa_verified' => true]);
-
-        // Continue with login
-        Auth::loginUsingId($userId, session('login.remember', false));
         
-        // Clear login session
-        session()->forget(['login.id', 'login.remember']);
-
-        // Redirect to Filament admin panel if coming from Filament login
-        $intended = session()->pull('url.intended');
-        if ($intended && str_contains($intended, '/admin')) {
-            return redirect($intended);
+        // #region agent log
+        $logPath = base_path('.cursor/debug.log');
+        try {
+            @file_put_contents($logPath, json_encode([
+                'sessionId' => 'debug-session',
+                'runId' => 'verify-2fa',
+                'hypothesisId' => 'I',
+                'location' => 'TwoFactorController::verify:after-verification',
+                'message' => '2FA verified, preparing redirect',
+                'data' => [
+                    'user_id' => $user->id,
+                    'is_login_flow' => $isLoginFlow,
+                    'is_authenticated' => Auth::check(),
+                    'auth_user_id' => Auth::id(),
+                    'session_2fa_verified' => session('2fa_verified'),
+                    'session_id' => session()->getId(),
+                ],
+                'timestamp' => time() * 1000,
+            ]) . "\n", FILE_APPEND | LOCK_EX);
+        } catch (\Throwable $e) {
+            // swallow logging errors
         }
+        // #endregion
+        
+        // Clear 2fa_user_id from session and cookie as it's no longer needed
+        session()->forget('2fa_user_id');
 
-        return redirect()->intended('/admin');
+        // Cookie to remove 2fa_user_id and set 2fa_verified
+        $removeCookie = cookie()->forget('2fa_user_id');
+        $verifiedCookie = cookie('2fa_verified', '1', 120); // 2 hours expiry
+
+        if ($isLoginFlow) {
+            // Continue with login
+            Auth::loginUsingId($user->id, session('login.remember', false));
+            
+            // Clear login session
+            session()->forget(['login.id', 'login.remember']);
+
+            // Redirect to Filament admin panel if coming from Filament login
+            $intended = session()->pull('url.intended');
+            if ($intended && str_contains($intended, '/admin')) {
+                return redirect($intended)->withCookie($removeCookie)->withCookie($verifiedCookie);
+            }
+
+            return redirect()->intended('/admin')->withCookie($removeCookie)->withCookie($verifiedCookie);
+        } else {
+            // User is already authenticated, just redirect to admin panel
+            // Use /admin path instead of route name to avoid route resolution issues
+            // #region agent log
+            $logPath = base_path('.cursor/debug.log');
+            try {
+                @file_put_contents($logPath, json_encode([
+                    'sessionId' => 'debug-session',
+                    'runId' => 'verify-2fa',
+                    'hypothesisId' => 'I',
+                    'location' => 'TwoFactorController::verify:redirect-dashboard',
+                    'message' => 'Redirecting to dashboard (non-login flow)',
+                    'data' => [
+                        'user_id' => $user->id,
+                        'is_authenticated' => Auth::check(),
+                        'auth_user_id' => Auth::id(),
+                        'session_2fa_verified' => session('2fa_verified'),
+                        'redirect_target' => '/admin',
+                    ],
+                    'timestamp' => time() * 1000,
+                ]) . "\n", FILE_APPEND | LOCK_EX);
+            } catch (\Throwable $e) {
+                // swallow logging errors
+            }
+            // #endregion
+            
+            return redirect()->to('/admin')->withCookie($removeCookie)->withCookie($verifiedCookie);
+        }
     }
 
     /**

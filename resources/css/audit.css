@@ -1,0 +1,241 @@
+/**
+ * Enterprise Audit Design System - Utility Classes
+ * 
+ * This file contains reusable CSS classes for the Enterprise Audit design system.
+ * Uses Tailwind @apply directive to maintain consistency with the design tokens.
+ * 
+ * Design Principles:
+ * - Minimal decoration
+ * - High information density
+ * - Enterprise-grade appearance
+ * - Accessibility-first (WCAG AA)
+ */
+
+/* ============================================
+   TABLE STYLES - Compact, dense, readable
+   ============================================ */
+
+.audit-table {
+    @apply text-sm leading-5;
+    border-color: var(--color-audit-border);
+    background-color: var(--color-audit-neutral-bg);
+    @apply border;
+}
+
+.audit-table thead {
+    @apply bg-neutral-50;
+    @apply border-b;
+    border-color: var(--color-audit-border);
+}
+
+.audit-table thead th {
+    padding-inline: var(--spacing-audit-2);
+    padding-block: var(--spacing-audit-1);
+    @apply text-xs font-medium text-neutral-700;
+    @apply uppercase tracking-wide;
+}
+
+.audit-table tbody tr {
+    @apply border-b;
+    border-color: var(--color-audit-border);
+    @apply transition-colors duration-150;
+}
+
+.audit-table tbody tr:hover {
+    @apply bg-neutral-50;
+}
+
+.audit-table tbody td {
+    padding-inline: var(--spacing-audit-2);
+    padding-block: var(--spacing-audit-1);
+    @apply text-sm;
+    color: var(--color-audit-text);
+}
+
+/* Primary data in cells - medium weight for hierarchy */
+.audit-table-cell-primary {
+    @apply font-medium;
+    color: var(--color-audit-text);
+}
+
+/* Secondary/meta data in cells - smaller and muted */
+.audit-table-cell-secondary {
+    @apply text-xs text-neutral-500;
+}
+
+/* ============================================
+   FORM STYLES - Clear labels, compact spacing
+   ============================================ */
+
+.audit-form-label {
+    @apply block text-sm font-medium mb-0.5;
+    color: var(--color-audit-text);
+}
+
+.audit-form-label-required::after {
+    content: '*';
+    @apply ml-0.5 text-danger-600;
+}
+
+.audit-form-input {
+    @apply mt-0.5;
+    @apply border rounded-audit;
+    border-color: var(--color-audit-border);
+    @apply px-3 py-2;
+    @apply text-sm bg-white;
+    color: var(--color-audit-text);
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2;
+    @apply focus-visible:ring-primary-400;
+    @apply transition-colors duration-150;
+}
+
+.audit-form-input:focus {
+    @apply border-primary-500;
+}
+
+.audit-form-input-error {
+    @apply border-danger-600;
+    @apply focus-visible:ring-danger-400;
+}
+
+.audit-form-help {
+    @apply mt-0.5 text-xs text-neutral-500;
+}
+
+.audit-form-error {
+    @apply mt-0.5 text-xs text-danger-600;
+    @apply font-medium;
+}
+
+/* ============================================
+   BADGE STYLES - Semantic status indicators
+   ============================================ */
+
+.audit-badge {
+    @apply inline-flex items-center;
+    @apply px-2 py-0.5;
+    @apply rounded-audit;
+    @apply text-xs font-medium;
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2;
+    @apply transition-colors duration-150;
+}
+
+.audit-badge:focus-visible {
+    --tw-ring-color: var(--color-audit-border);
+}
+
+/* Status-specific badge colors */
+.audit-badge-missing {
+    @apply bg-danger-50 text-danger-700;
+    @apply border border-danger-200;
+}
+
+.audit-badge-in-review {
+    @apply bg-warning-50 text-warning-700;
+    @apply border border-warning-200;
+}
+
+.audit-badge-completed {
+    @apply bg-success-50 text-success-700;
+    @apply border border-success-200;
+}
+
+/* ============================================
+   FOCUS STATES - Global accessibility
+   ============================================ */
+
+/* Global focus-visible styles for keyboard navigation */
+*:focus-visible {
+    @apply outline-none ring-2 ring-offset-2;
+    @apply ring-primary-400;
+}
+
+/* Override for danger elements */
+.danger-focus:focus-visible {
+    @apply ring-danger-400;
+}
+
+/* Override for success elements */
+.success-focus:focus-visible {
+    @apply ring-success-400;
+}
+
+/* ============================================
+   ACTION BUTTONS - Enterprise styling
+   ============================================ */
+
+.audit-action-primary {
+    @apply bg-primary-500 text-white;
+    @apply hover:bg-primary-600;
+    @apply focus-visible:ring-primary-400;
+    @apply transition-colors duration-150;
+}
+
+.audit-action-danger {
+    @apply bg-danger-600 text-white;
+    @apply hover:bg-danger-700;
+    @apply focus-visible:ring-danger-400;
+    @apply transition-colors duration-150;
+}
+
+.audit-action-export {
+    @apply bg-success-600 text-white;
+    @apply hover:bg-success-700;
+    @apply focus-visible:ring-success-400;
+    @apply transition-colors duration-150;
+}
+
+/* ============================================
+   LAYOUT UTILITIES - Enterprise spacing
+   ============================================ */
+
+.audit-page-header {
+    @apply mb-6;
+    @apply flex items-center justify-between;
+}
+
+.audit-page-title {
+    @apply text-2xl font-semibold;
+    color: var(--color-audit-text);
+}
+
+.audit-card {
+    @apply bg-white rounded-lg;
+    @apply border shadow-sm p-6;
+    border-color: var(--color-audit-border);
+}
+
+.audit-section {
+    @apply mb-6;
+}
+
+.audit-section-title {
+    @apply text-sm font-semibold mb-3;
+    @apply uppercase tracking-wide;
+    color: var(--color-audit-text);
+}
+
+/* ============================================
+   AUTH PAGES (Filament "simple" pages)
+   - Centered, boxed layout (login / password reset / etc.)
+   ============================================ */
+
+.fi-simple-page {
+    @apply min-h-screen flex items-center justify-center;
+    @apply bg-neutral-50;
+    /* Reduce vertical whitespace on auth pages */
+    @apply px-4 py-4;
+}
+
+.fi-simple-page-content {
+    @apply w-full max-w-md;
+    @apply bg-white;
+    @apply border;
+    border-color: var(--color-audit-border);
+    @apply rounded-lg shadow-sm;
+    @apply p-6;
+}
+
+.fi-simple-header {
+    @apply mb-4;
+}

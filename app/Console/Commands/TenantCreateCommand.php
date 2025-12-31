@@ -2,13 +2,14 @@
 
 namespace App\Console\Commands;
 
+use App\Models\Tenant;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Stancl\Tenancy\Database\Models\Domain;
-use Stancl\Tenancy\Database\Models\Tenant;
 
 class TenantCreateCommand extends Command
 {
@@ -57,8 +58,11 @@ class TenantCreateCommand extends Command
 
             // Step 2: Create domain (this triggers database creation via events)
             $this->info('Step 2: Creating domain and database...');
-            $tenant->domains()->create([
-                'domain' => $domain,
+            // Extract subdomain from full domain (e.g., 'test' from 'test.localhost')
+            $subdomain = explode('.', $domain)[0];
+            Domain::create([
+                'domain' => $subdomain, // Save only the subdomain part
+                'tenant_id' => $tenant->id,
             ]);
 
             $this->info("✓ Domain '{$domain}' created");

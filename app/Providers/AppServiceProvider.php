@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use Filament\Tables\Table;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -37,6 +38,23 @@ class AppServiceProvider extends ServiceProvider
         
         // Register custom gates
         $this->registerGates();
+        
+        // Configure global Filament table defaults for Enterprise Audit design system
+        $this->configureFilamentTables();
+    }
+    
+    /**
+     * Configure global Filament table defaults for Enterprise Audit design system
+     */
+    protected function configureFilamentTables(): void
+    {
+        Table::configureUsing(function (Table $table): void {
+            $table
+                ->defaultPaginationPageOption(25)
+                ->paginationPageOptions([10, 25, 50, 100])
+                ->striped(false) // No zebra striping for enterprise look
+                ->deferLoading(); // Improve performance for large tables
+        });
     }
     
     /**

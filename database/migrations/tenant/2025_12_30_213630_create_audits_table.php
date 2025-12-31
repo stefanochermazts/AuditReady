@@ -15,7 +15,12 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->text('description')->nullable();
-            $table->enum('status', ['draft', 'in_progress', 'completed', 'archived'])->default('draft');
+            // Keep in sync with app logic (AuditResource + StatusBadgeHelper):
+            // - draft
+            // - in_progress
+            // - closed (used when "Close Audit" action is executed)
+            // - archived (reserved for retention/lifecycle)
+            $table->enum('status', ['draft', 'in_progress', 'closed', 'archived'])->default('draft');
             $table->date('start_date')->nullable();
             $table->date('end_date')->nullable();
             $table->timestamp('closed_at')->nullable();

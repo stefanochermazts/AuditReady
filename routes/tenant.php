@@ -43,6 +43,10 @@ Route::middleware([
         ]);
     })->name('tenant.welcome');
     
+    // Export routes
+    Route::post('audits/{audit}/export', [\App\Http\Controllers\ExportController::class, 'requestExport'])->name('audits.export');
+    Route::get('exports/download/{file}', [\App\Http\Controllers\ExportController::class, 'download'])->name('exports.download');
+    
     // Tenant-specific routes will be added here
     // Filament admin panel will be accessible at /admin for each tenant
 });
