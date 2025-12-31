@@ -50,6 +50,49 @@
             background-color: #f2f2f2;
             font-weight: bold;
         }
+
+        /* DomPDF-friendly wrapping + evidence blocks (avoid wide tables) */
+        .break-all {
+            word-break: break-all;
+            overflow-wrap: anywhere;
+        }
+        .muted {
+            color: #666;
+        }
+        .mono {
+            font-family: monospace;
+            font-size: 10px;
+        }
+        .evidence-card {
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 10px;
+            margin-bottom: 12px;
+            page-break-inside: avoid;
+        }
+        .page-break {
+            page-break-after: always;
+        }
+        .evidence-title {
+            font-weight: bold;
+            margin: 0 0 8px 0;
+        }
+        .kv {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+        .kv td {
+            border: none;
+            padding: 2px 0;
+            vertical-align: top;
+        }
+        .kv td.key {
+            width: 32%;
+            color: #555;
+            font-weight: bold;
+            padding-right: 10px;
+        }
         .footer {
             margin-top: 40px;
             padding-top: 10px;
@@ -61,6 +104,62 @@
     </style>
 </head>
 <body>
+    @php
+        /**
+         * Render values in an audit-friendly way (DomPDF-safe).
+         */
+        $formatAuditValue = function ($value): string {
+            if (is_null($value)) {
+                return '—';
+            }
+
+            if (is_bool($value)) {
+                return $value ? 'true' : 'false';
+            }
+
+            if (is_string($value)) {
+                $trimmed = trim($value);
+                // Attempt to decode JSON strings.
+                if (($trimmed !== '') && (str_starts_with($trimmed, '{') || str_starts_with($trimmed, '['))) {
+                    $decoded = json_decode($trimmed, true);
+                    if (json_last_error() === JSON_ERROR_NONE) {
+                        $value = $decoded;
+                    }
+                }
+            }
+
+            if (is_array($value)) {
+                // If it's a simple list, join.
+                $isList = array_keys($value) === range(0, count($value) - 1);
+                if ($isList) {
+                    return implode(', ', array_map(fn ($v) => is_scalar($v) ? (string) $v : json_encode($v), $value));
+                }
+
+                // Fallback: pretty JSON for complex objects.
+                return json_encode($value, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+            }
+
+            return (string) $value;
+        };
+
+        $decodeAuditPayload = function ($payload): array {
+            if (is_null($payload)) {
+                return [];
+            }
+
+            if (is_string($payload)) {
+                $decoded = json_decode($payload, true);
+                return (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) ? $decoded : ['details' => $payload];
+            }
+
+            if (is_array($payload)) {
+                return $payload;
+            }
+
+            return ['details' => (string) $payload];
+        };
+    @endphp
+
     <div class="header">
         <h1>Audit Export: {{ $audit->name }}</h1>
         <div class="meta">
@@ -127,76 +226,151 @@
     <div class="section">
         <h2>Evidences ({{ $evidences->count() }})</h2>
         @if($evidences->count() > 0)
-        <table>
-            <thead>
-                <tr>
-                    <th>Filename</th>
-                    <th>Category</th>
-                    <th>Document Date</th>
-                    <th>Validation Status</th>
-                    <th>Regulatory Reference</th>
-                    <th>MIME Type</th>
-                    <th>Size</th>
-                    <th>Version</th>
-                    <th>Uploader</th>
-                    <th>Uploaded At</th>
-                    <th>Checksum</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($evidences as $evidence)
-                <tr>
-                    <td>{{ $evidence->filename }}</td>
-                    <td>{{ $evidence->category ?? 'N/A' }}</td>
-                    <td>{{ $evidence->document_date?->format('Y-m-d') ?? 'N/A' }}</td>
-                    <td>{{ ucfirst(str_replace('_', ' ', $evidence->validation_status ?? 'pending')) }}</td>
-                    <td>{{ $evidence->regulatory_reference ?? 'N/A' }}</td>
-                    <td>{{ $evidence->mime_type }}</td>
-                    <td>{{ number_format($evidence->size) }} bytes</td>
-                    <td>{{ $evidence->version }}</td>
-                    <td>{{ $evidence->uploader->name ?? 'N/A' }}</td>
-                    <td>{{ $evidence->created_at->format('Y-m-d H:i:s') }}</td>
-                    <td style="font-family: monospace; font-size: 10px;">{{ substr($evidence->checksum, 0, 16) }}...</td>
-                </tr>
-                @endforeach
-            </tbody>
-        </table>
+            @foreach($evidences as $evidence)
+                <div class="evidence-card">
+                    <p class="evidence-title break-all">
+                        {{ $evidence->filename ?: ('Evidence #' . $evidence->id) }}
+                        <span class="muted"> — v{{ $evidence->version }}</span>
+                    </p>
+
+                    <table class="kv">
+                        <tbody>
+                            <tr>
+                                <td class="key">Category</td>
+                                <td>{{ $evidence->category ?? 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <td class="key">Validation Status</td>
+                                <td>{{ ucfirst(str_replace('_', ' ', $evidence->validation_status ?? 'pending')) }}</td>
+                            </tr>
+                            <tr>
+                                <td class="key">Document Date</td>
+                                <td>{{ $evidence->document_date?->format('Y-m-d') ?? 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <td class="key">Regulatory Reference</td>
+                                <td class="break-all">{{ $evidence->regulatory_reference ?? 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <td class="key">MIME Type</td>
+                                <td>{{ $evidence->mime_type ?: 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <td class="key">Size</td>
+                                <td>{{ number_format($evidence->size ?? 0) }} bytes</td>
+                            </tr>
+                            <tr>
+                                <td class="key">Uploader</td>
+                                <td>{{ $evidence->uploader->name ?? 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <td class="key">Uploaded At</td>
+                                <td>{{ $evidence->created_at?->format('Y-m-d H:i:s') ?? 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <td class="key">Checksum</td>
+                                <td class="mono break-all">{{ $evidence->checksum ?: 'N/A' }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            @endforeach
         @else
         <p>No evidences found for this audit.</p>
         @endif
     </div>
 
+    {{-- Page break after evidences to keep audit trail readable --}}
+    <div class="page-break"></div>
+
     @if($auditLogs->count() > 0)
     <div class="section">
         <h2>Audit Trail ({{ $auditLogs->count() }} entries)</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>Date/Time</th>
-                    <th>Action</th>
-                    <th>User</th>
-                    <th>IP Address</th>
-                    <th>Details</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($auditLogs as $log)
-                <tr>
-                    <td>{{ $log->created_at->format('Y-m-d H:i:s') }}</td>
-                    <td>{{ ucfirst($log->action) }}</td>
-                    <td>{{ $log->user->name ?? 'System' }}</td>
-                    <td>{{ $log->ip_address ?? 'N/A' }}</td>
-                    <td>
-                        @if($log->payload)
-                            {{ json_encode($log->payload, JSON_PRETTY_PRINT) }}
-                        @else
-                            -
+        @foreach($auditLogs as $log)
+            <div class="evidence-card">
+                <p class="evidence-title">
+                    {{ ucfirst($log->action) }}
+                    <span class="muted"> — {{ $log->created_at->format('Y-m-d H:i:s') }}</span>
+                </p>
+
+                <table class="kv">
+                    <tbody>
+                        <tr>
+                            <td class="key">User</td>
+                            <td>{{ $log->user->name ?? 'System' }}</td>
+                        </tr>
+                        <tr>
+                            <td class="key">IP Address</td>
+                            <td>{{ $log->ip_address ?? 'N/A' }}</td>
+                        </tr>
+                        @php
+                            $payload = $decodeAuditPayload($log->payload);
+                            $action = strtolower($log->action ?? '');
+
+                            // Handle "Created" action: payload has "attributes" with all fields
+                            if ($action === 'created' && is_array($payload) && isset($payload['attributes'])) {
+                                $attributes = $payload['attributes'];
+                                $keys = array_keys($attributes);
+                            }
+                            // Handle "Updated" action: payload has "old" and "new"
+                            elseif (is_array($payload) && (isset($payload['old']) || isset($payload['new']))) {
+                                $old = $payload['old'] ?? [];
+                                $new = $payload['new'] ?? [];
+                                $old = is_array($old) ? $old : [];
+                                $new = is_array($new) ? $new : [];
+                                $keys = array_values(array_unique(array_merge(array_keys($old), array_keys($new))));
+                            }
+                            // Fallback: try to extract keys from payload directly
+                            elseif (is_array($payload) && !empty($payload)) {
+                                $keys = array_keys($payload);
+                            }
+                            else {
+                                $keys = [];
+                            }
+                        @endphp
+
+                        @if ($action === 'created' && isset($attributes))
+                            {{-- Display all attributes for "Created" action --}}
+                            @foreach ($keys as $key)
+                                @php
+                                    $value = $attributes[$key] ?? null;
+                                @endphp
+                                <tr>
+                                    <td class="key">{{ $key }}</td>
+                                    <td class="mono break-all">{{ $formatAuditValue($value) }}</td>
+                                </tr>
+                            @endforeach
+                        @elseif (isset($old) && isset($new))
+                            {{-- Display diff for "Updated" action --}}
+                            @foreach ($keys as $key)
+                                @php
+                                    $oldVal = $old[$key] ?? null;
+                                    $newVal = $new[$key] ?? null;
+
+                                    // Skip unchanged fields to reduce noise.
+                                    if ($oldVal === $newVal) {
+                                        continue;
+                                    }
+                                @endphp
+                                <tr>
+                                    <td class="key">{{ $key }}</td>
+                                    <td class="mono break-all">
+                                        <span class="muted">old:</span> {{ $formatAuditValue($oldVal) }}
+                                        <br>
+                                        <span class="muted">new:</span> {{ $formatAuditValue($newVal) }}
+                                    </td>
+                                </tr>
+                            @endforeach
+                        @elseif (! empty($payload))
+                            <tr>
+                                <td class="key">Details</td>
+                                <td class="mono break-all">{{ $formatAuditValue($payload) }}</td>
+                            </tr>
                         @endif
-                    </td>
-                </tr>
-                @endforeach
-            </tbody>
-        </table>
+                    </tbody>
+                </table>
+            </div>
+        @endforeach
     </div>
     @endif
 
