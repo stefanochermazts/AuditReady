@@ -77,6 +77,18 @@ Questa distinzione è fondamentale per ridurre il rischio legale e semplificare 
 - **Preferenza utente**: stato sidebar (aperta/chiusa) salvato in `localStorage`
 - **Visualizzazione Grafo Relazioni**: Grafo interattivo per visualizzare relazioni tra audit, controlli ed evidenze (Cytoscape.js)
 
+## Moduli sviluppati (funzionalità)
+
+- **Modulo 1 — Core Platform**: multi-tenancy multi-database, storage provider-agnostic, crittografia file, audit trail e gestione evidenze.
+- **Modulo 2 — Accesso e Sicurezza**: login, 2FA TOTP obbligatoria per ruoli critici, RBAC (Spatie Permission) e policy-based authorization.
+- **Modulo 3 — Third‑Party Evidence Requestor**: richiesta evidenze a fornitori esterni con link dedicato, tracking stato/scadenza, upload e logging (supplier sempre visibile).
+- **Modulo 4 — Audit Day Pack Generator**: generazione pacchetto "giorno audit" (ZIP/PDF) con indice controlli, evidenze organizzate e audit trail, download sicuro e generazione asincrona.
+- **Modulo 5 — Policy ↔ Control Linker**: gestione policy con **upload** e/o **link intranet**, mappatura policy↔controlli, statistiche coverage e sezione coverage nei report export.
+- **Miglioria — Audit Relationship Graph**: grafo interattivo Audit–Controls–Evidences–Policies (Cytoscape.js), fullscreen, click-to-navigate, caching e invalidazione automatica. Vedi **[docs/visualization.md](docs/visualization.md)**.
+- **Miglioria — Collegamento Controls ↔ Audit**: relazione molti-a-molti e UI Filament (RelationManager) per collegare/scollegare controlli direttamente dalla view dell'audit.
+- **Miglioria — Gap Snapshot**: wizard guidato per valutazione "gap" per standard/controlli con export dedicato (PDF).
+- **Miglioria — Ownership Matrix**: matrice di ownership dei controlli (per owner/ruolo), con export (PDF/Excel).
+
 ## Stack tecnologico
 
 ### Backend
