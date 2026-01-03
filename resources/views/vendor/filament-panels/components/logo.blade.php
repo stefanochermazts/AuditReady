@@ -1,7 +1,8 @@
 @php
     $brandName = filament()->getBrandName();
     $brandLogo = filament()->getBrandLogo();
-    $brandLogoHeight = filament()->getBrandLogoHeight() ?? '1.5rem';
+    // Default: 3rem everywhere; reduced to 1.5rem on mobile via CSS.
+    $brandLogoHeight = filament()->getBrandLogoHeight() ?? '3rem';
     $darkModeBrandLogo = filament()->getDarkModeBrandLogo();
     $hasDarkModeBrandLogo = filled($darkModeBrandLogo);
 

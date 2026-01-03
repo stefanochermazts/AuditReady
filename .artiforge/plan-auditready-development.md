@@ -132,7 +132,7 @@ Al completamento di tutti gli step:
 - **Backend**: Laravel 12.0, PHP 8.2+
 - **Database**: SQLite (dev) / PostgreSQL/MySQL (production)
 - **Storage**: Provider-agnostic S3-compatible (MinIO, AWS S3, DigitalOcean Spaces, Wasabi, Backblaze B2, o locale) - configurabile via env
-- **Frontend**: Filament 3.x (admin panel), Livewire 3.x, Tailwind CSS 4.0, Vite 7.0
+- **Frontend**: Filament 4.4 (admin panel), Livewire 3.x, Tailwind CSS 4.0, Vite 7.0
 - **Sicurezza**: AES-256, Argon2/bcrypt, TLS 1.2+, TOTP 2FA (compatibile Microsoft Authenticator)
 - **Testing**: PHPUnit 11.5, Laravel Pint
 
@@ -324,7 +324,7 @@ Al completamento di tutti gli step:
 
 ## Step 6: Implementare Interfaccia Filament con Integrazione Multi-Tenant, RBAC e 2FA
 
-**Azione**: Implementare interfaccia admin con Filament 3.x integrata con multi-tenant, RBAC e 2FA.
+**Azione**: Implementare interfaccia admin con Filament 4.4 integrata con multi-tenant, RBAC e 2FA.
 
 **Ragionamento**: Filament offre UX moderna, sviluppo rapido e integrazione nativa con Laravel. Deve essere integrato con multi-tenant, RBAC e 2FA per garantire sicurezza e isolamento.
 

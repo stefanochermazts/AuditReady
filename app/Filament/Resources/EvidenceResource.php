@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\EvidenceResource\Pages;
 use App\Filament\Support\StatusBadgeHelper;
+use App\Models\Control;
 use App\Models\Evidence;
 use Filament\Actions;
 use Filament\Forms;
@@ -41,14 +42,15 @@ class EvidenceResource extends Resource
                     ->preload(),
                 Forms\Components\FileUpload::make('stored_path')
                     ->label('File')
-                    ->required()
+                    ->required(fn ($livewire) => $livewire instanceof \App\Filament\Resources\EvidenceResource\Pages\CreateEvidence)
                     ->acceptedFileTypes(['application/pdf', 'image/*', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'])
                     ->maxSize(10240) // 10MB
                     ->directory('evidences')
                     ->visibility('private')
                     ->storeFileNamesIn('original_filename')
-                    ->downloadable()
+                    ->downloadable(false) // Disable automatic download - use custom download button instead
                     ->previewable()
+                    ->helperText(fn ($livewire) => $livewire instanceof \App\Filament\Resources\EvidenceResource\Pages\EditEvidence ? 'Leave empty to keep the current file. Use the Download button in the header to download the file.' : 'Upload a file')
                     ->columnSpanFull(),
                 
                 // Document Classification
@@ -63,6 +65,7 @@ class EvidenceResource extends Resource
                         'certificate' => 'Certificate',
                         'contract' => 'Contract',
                         'report' => 'Report',
+                        'Third-Party Evidence' => 'Third-Party Evidence',
                         'other' => 'Other',
                     ])
                     ->searchable(),
@@ -77,14 +80,47 @@ class EvidenceResource extends Resource
                     ->maxLength(255),
                 
                 // Compliance References
+                Forms\Components\Select::make('control_selector')
+                    ->label('Control')
+                    ->helperText('Select a control to auto-fill the regulatory & control references.')
+                    ->options(
+                        Control::query()
+                            ->select(['id', 'standard', 'article_reference', 'title'])
+                            ->orderBy('standard')
+                            ->orderBy('article_reference')
+                            ->orderBy('title')
+                            ->get()
+                            ->mapWithKeys(fn (Control $control): array => [
+                                $control->id => trim(($control->article_reference ? $control->article_reference . ' - ' : '') . $control->title),
+                            ])
+                            ->all()
+                    )
+                    ->searchable()
+                    ->preload()
+                    ->live()
+                    ->afterStateUpdated(function ($state, $set) {
+                        if (! $state) {
+                            return;
+                        }
+
+                        $control = Control::find($state);
+                        if (! $control) {
+                            return;
+                        }
+
+                        // Fill the existing Evidence fields (kept for backwards compatibility / export usage)
+                        $set('control_reference', $control->article_reference ?? $control->title);
+                        $set('regulatory_reference', trim($control->standard . ($control->article_reference ? ' ' . $control->article_reference : '')));
+                    })
+                    ->dehydrated(false),
                 Forms\Components\Textarea::make('regulatory_reference')
                     ->label('Regulatory Reference')
-                    ->helperText('e.g., "ISO 27001:2022 A.5.1.1", "GDPR Art. 32"')
+                    ->helperText('Auto-filled from the selected control, but you can edit it.')
                     ->rows(2)
                     ->columnSpanFull(),
                 Forms\Components\Textarea::make('control_reference')
                     ->label('Control Reference')
-                    ->helperText('Internal control reference, e.g., "CTRL-001"')
+                    ->helperText('Auto-filled from the selected control, but you can edit it.')
                     ->rows(2)
                     ->columnSpanFull(),
                 
@@ -98,15 +134,34 @@ class EvidenceResource extends Resource
                         'needs_revision' => 'Needs Revision',
                     ])
                     ->default('pending')
-                    ->required(),
+                    ->required()
+                    ->live()
+                    ->afterStateUpdated(function ($state, $set, $get) {
+                        // Clear validated_by and validated_at when status changes to pending
+                        if ($state === 'pending') {
+                            $set('validated_by', null);
+                            $set('validated_at', null);
+                        } elseif (in_array($state, ['approved', 'rejected'])) {
+                            // Set validated_at when status changes to approved/rejected
+                            if (!$get('validated_at')) {
+                                $set('validated_at', now());
+                            }
+                            // Auto-set validated_by to current user if not set
+                            if (!$get('validated_by')) {
+                                $set('validated_by', auth()->id());
+                            }
+                        }
+                    }),
                 Forms\Components\Select::make('validated_by')
                     ->label('Validated By')
                     ->relationship('validator', 'name')
                     ->searchable()
                     ->preload()
+                    ->default(fn () => auth()->id())
                     ->visible(fn ($get) => in_array($get('validation_status'), ['approved', 'rejected'])),
                 Forms\Components\DateTimePicker::make('validated_at')
                     ->label('Validated At')
+                    ->default(fn () => now())
                     ->visible(fn ($get) => in_array($get('validation_status'), ['approved', 'rejected'])),
                 Forms\Components\Textarea::make('validation_notes')
                     ->label('Validation Notes')
@@ -186,6 +241,19 @@ class EvidenceResource extends Resource
                 Tables\Columns\TextColumn::make('uploader.name')
                     ->label('Uploaded By')
                     ->sortable(),
+                Tables\Columns\TextColumn::make('supplier')
+                    ->label('Supplier')
+                    ->getStateUsing(function (Evidence $record): ?string {
+                        if ($record->evidenceRequest && $record->evidenceRequest->supplier) {
+                            return $record->evidenceRequest->supplier->name;
+                        }
+
+                        return $record->supplier;
+                    })
+                    ->searchable()
+                    ->sortable()
+                    ->placeholder('N/A')
+                    ->toggleable(),
                 Tables\Columns\TextColumn::make('size')
                     ->label('Size')
                     ->formatStateUsing(fn ($state) => $state ? number_format($state / 1024, 2) . ' KB' : '-')
@@ -251,6 +319,11 @@ class EvidenceResource extends Resource
                     ->query(fn ($query) => $query->where('expiry_date', '<', now())),
             ])
             ->actions([
+                Actions\Action::make('download')
+                    ->label('Download')
+                    ->icon('heroicon-o-arrow-down-tray')
+                    ->url(fn (Evidence $record) => route('evidence.download', ['evidence' => $record->id]))
+                    ->openUrlInNewTab(),
                 Actions\ViewAction::make(),
                 Actions\EditAction::make(),
                 Actions\DeleteAction::make(),

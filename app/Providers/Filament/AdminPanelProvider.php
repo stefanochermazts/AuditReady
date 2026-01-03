@@ -37,8 +37,12 @@ class AdminPanelProvider extends PanelProvider
             ->login(\App\Filament\Pages\Auth\Login::class)
             ->brandName('AuditReady')
             ->brandLogo(asset('images/logo.svg'))
+            ->brandLogoHeight('3rem')
             ->favicon(asset('favicon.ico'))
-            ->viteTheme('resources/css/filament/admin/theme.css')
+            ->viteTheme([
+                'resources/css/filament/admin/theme.css',
+                'resources/js/filament/admin.js',
+            ])
             ->colors([
                 // Enterprise Audit Blue (Petroleum) - used sparingly for primary actions, active links, focus
                 'primary' => [
@@ -116,6 +120,8 @@ class AdminPanelProvider extends PanelProvider
             ->pages([
                 Dashboard::class,
             ])
+            // Allow managing relations directly from "View" pages (e.g., link Controls on View Audit).
+            ->readOnlyRelationManagersOnResourceViewPagesByDefault(false)
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
             ->widgets([
                 AccountWidget::class,

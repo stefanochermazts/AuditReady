@@ -223,6 +223,132 @@
     </div>
     @endif
 
+    @if(isset($ownershipMatrix) && count($ownershipMatrix) > 0)
+    <div class="section">
+        <h2>Control Ownership Matrix</h2>
+        <p class="muted" style="margin-bottom: 15px;">
+            This matrix shows the ownership assignment for controls related to this audit's compliance standards.
+        </p>
+        @foreach($ownershipMatrix as $control)
+            <div class="evidence-card">
+                <p class="evidence-title">
+                    {{ $control['article_reference'] ?? 'N/A' }}: {{ $control['title'] }}
+                    <span class="muted"> — {{ $control['standard'] }}</span>
+                </p>
+                <table class="kv">
+                    <tbody>
+                        <tr>
+                            <td class="key">Category</td>
+                            <td>{{ $control['category'] ?? 'N/A' }}</td>
+                        </tr>
+                        @if(count($control['owners']) > 0)
+                            <tr>
+                                <td class="key">Owners</td>
+                                <td>
+                                    @foreach($control['owners'] as $owner)
+                                        <div style="margin-bottom: 5px;">
+                                            <strong>{{ $owner['user_name'] }}</strong>
+                                            @if($owner['role_name'])
+                                                <span class="muted">({{ $owner['role_name'] }})</span>
+                                            @endif
+                                            <br>
+                                            <span class="muted" style="font-size: 10px;">
+                                                {{ ucfirst($owner['responsibility_level']) }}
+                                                @if($owner['notes'])
+                                                    — {{ $owner['notes'] }}
+                                                @endif
+                                            </span>
+                                        </div>
+                                    @endforeach
+                                </td>
+                            </tr>
+                        @else
+                            <tr>
+                                <td class="key">Owners</td>
+                                <td class="muted">No owners assigned</td>
+                            </tr>
+                        @endif
+                    </tbody>
+                </table>
+            </div>
+        @endforeach
+    </div>
+    @endif
+
+    @if(isset($gapSnapshots) && count($gapSnapshots) > 0)
+    <div class="page-break"></div>
+    <div class="section">
+        <h2>Gap Snapshots ({{ count($gapSnapshots) }})</h2>
+        <p class="muted" style="margin-bottom: 15px;">
+            Gap analysis snapshots linked to this audit. These snapshots provide a quick assessment of control coverage and identify gaps.
+        </p>
+        @foreach($gapSnapshots as $snapshotData)
+            @php
+                $snapshot = $snapshotData['snapshot'];
+                $gapAnalysis = $snapshotData['gapAnalysis'];
+                $statistics = $snapshotData['statistics'];
+            @endphp
+            <div class="evidence-card" style="margin-bottom: 20px;">
+                <p class="evidence-title">
+                    {{ $snapshot->name }}
+                    <span class="muted"> — {{ $snapshot->standard }}</span>
+                </p>
+                <table class="kv">
+                    <tbody>
+                        <tr>
+                            <td class="key">Completed By</td>
+                            <td>{{ $snapshot->completedBy->name ?? 'N/A' }}</td>
+                        </tr>
+                        <tr>
+                            <td class="key">Completed At</td>
+                            <td>{{ $snapshot->completed_at ? $snapshot->completed_at->format('Y-m-d H:i:s') : 'N/A' }}</td>
+                        </tr>
+                        <tr>
+                            <td class="key">Completion</td>
+                            <td>{{ $statistics['completion_percentage'] }}% ({{ $statistics['answered_controls'] }}/{{ $statistics['total_controls'] }} controls)</td>
+                        </tr>
+                        <tr>
+                            <td class="key">Summary</td>
+                            <td>
+                                Yes: {{ $statistics['yes_count'] }} | 
+                                Partial: {{ $statistics['partial_count'] }} | 
+                                No: {{ $statistics['no_count'] }} | 
+                                N/A: {{ $statistics['not_applicable_count'] }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="key">Gaps Identified</td>
+                            <td>{{ $statistics['gaps_count'] }}</td>
+                        </tr>
+                        <tr>
+                            <td class="key">Controls without Evidence</td>
+                            <td>{{ $statistics['controls_without_evidence'] }}</td>
+                        </tr>
+                        <tr>
+                            <td class="key">High Risk Controls</td>
+                            <td>{{ $statistics['high_risk_controls'] }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                @if(count($gapAnalysis['high_risk_controls_list']) > 0)
+                    <div style="margin-top: 15px; padding: 10px; background-color: #fff3cd; border-left: 4px solid #ffc107;">
+                        <p style="font-weight: bold; margin-bottom: 5px; font-size: 11px;">High Risk Controls:</p>
+                        <ul style="margin: 0; padding-left: 20px; font-size: 10px;">
+                            @foreach(array_slice($gapAnalysis['high_risk_controls_list'], 0, 5) as $risk)
+                                <li>{{ $risk['control_reference'] ?? 'N/A' }}: {{ $risk['control_title'] }} ({{ ucfirst($risk['response']) }})</li>
+                            @endforeach
+                            @if(count($gapAnalysis['high_risk_controls_list']) > 5)
+                                <li class="muted">... and {{ count($gapAnalysis['high_risk_controls_list']) - 5 }} more</li>
+                            @endif
+                        </ul>
+                    </div>
+                @endif
+            </div>
+        @endforeach
+    </div>
+    @endif
+
     <div class="section">
         <h2>Evidences ({{ $evidences->count() }})</h2>
         @if($evidences->count() > 0)
@@ -380,6 +506,84 @@
                     </tbody>
                 </table>
             </div>
+        @endforeach
+    </div>
+    @endif
+
+    @if(isset($policyCoverage) && !empty($policyCoverage['report']))
+    <div class="section page-break">
+        <h2>Policy Coverage Report</h2>
+        <p class="muted" style="margin-bottom: 15px;">
+            This report shows which policies cover which controls for this audit's compliance standards.
+        </p>
+        
+        @if(isset($policyCoverage['statistics']))
+        <div style="margin-bottom: 20px; padding: 10px; background-color: #f9f9f9; border-radius: 6px;">
+            <table class="kv">
+                <tbody>
+                    <tr>
+                        <td class="key">Total Controls</td>
+                        <td>{{ $policyCoverage['statistics']['total_controls'] ?? 0 }}</td>
+                    </tr>
+                    <tr>
+                        <td class="key">Mapped Controls</td>
+                        <td>{{ $policyCoverage['statistics']['mapped_controls'] ?? 0 }}</td>
+                    </tr>
+                    <tr>
+                        <td class="key">Coverage Percentage</td>
+                        <td><strong>{{ $policyCoverage['statistics']['coverage_percentage'] ?? 0 }}%</strong></td>
+                    </tr>
+                    <tr>
+                        <td class="key">Total Policies</td>
+                        <td>{{ $policyCoverage['statistics']['total_policies'] ?? 0 }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        @endif
+
+        @foreach($policyCoverage['report'] ?? [] as $item)
+            @if($item['policy_count'] > 0)
+            <div class="evidence-card">
+                <p class="evidence-title">
+                    {{ $item['control']->article_reference ?? 'N/A' }}: {{ $item['control']->title }}
+                    <span class="muted"> — {{ $item['control']->standard }}</span>
+                </p>
+                <table class="kv">
+                    <tbody>
+                        <tr>
+                            <td class="key">Category</td>
+                            <td>{{ $item['control']->category ?? 'N/A' }}</td>
+                        </tr>
+                        <tr>
+                            <td class="key">Policies ({{ $item['policy_count'] }})</td>
+                            <td>
+                                @foreach($item['policies'] as $policy)
+                                    <div style="margin-bottom: 8px; padding: 8px; background-color: #f5f5f5; border-radius: 4px;">
+                                        <strong>{{ $policy->name }}</strong> (v{{ $policy->version }})
+                                        @if($policy->hasFile())
+                                            <br><span class="muted">File: {{ $policy->evidence->filename ?? 'N/A' }}</span>
+                                        @endif
+                                        @if($policy->hasLink())
+                                            <br><span class="muted">Link: {{ $policy->internal_link }}</span>
+                                        @endif
+                                        @if($policy->owner)
+                                            <br><span class="muted">Owner: {{ $policy->owner->name }}</span>
+                                        @endif
+                                        @php
+                                            $mapping = $item['mappings']->firstWhere('policy.id', $policy->id);
+                                        @endphp
+                                        @if($mapping && $mapping['coverage_notes'])
+                                            <br><span class="muted" style="font-size: 10px;">Notes: {{ $mapping['coverage_notes'] }}</span>
+                                        @endif
+                                    </div>
+                                @endforeach
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            @endif
         @endforeach
     </div>
     @endif

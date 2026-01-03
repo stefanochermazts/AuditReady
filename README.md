@@ -67,14 +67,15 @@ Questa distinzione è fondamentale per ridurre il rischio legale e semplificare 
   - Storage locale (sviluppo)
 - **Configurazione via Environment**: Cambio provider senza modificare codice
 
-### Interfaccia (Filament Admin Panel + “Enterprise Audit” UI)
+### Interfaccia (Filament Admin Panel + "Enterprise Audit" UI)
 
 - **Filament 4.4.0**: Admin panel moderno e intuitivo
 - **Livewire**: Componenti reattivi senza JavaScript complesso
 - **Enterprise Audit theme**: palette neutral + densità informativa + focus states accessibili
-- **Login & 2FA verify coerenti**: pagine auth “boxed” e allineate al tema
+- **Login & 2FA verify coerenti**: pagine auth "boxed" e allineate al tema
 - **Sidebar più densa**: più stretta, collassabile (icone) e fully-collapsible su desktop
 - **Preferenza utente**: stato sidebar (aperta/chiusa) salvato in `localStorage`
+- **Visualizzazione Grafo Relazioni**: Grafo interattivo per visualizzare relazioni tra audit, controlli ed evidenze (Cytoscape.js)
 
 ## Stack tecnologico
 
@@ -89,6 +90,7 @@ Questa distinzione è fondamentale per ridurre il rischio legale e semplificare 
 - **Livewire 3.x**
 - **Tailwind CSS 4**
 - **Vite 7**
+- **Cytoscape.js 3.24+** (visualizzazione grafo relazioni)
 
 ### Sicurezza
 - **Laravel Fortify** (auth)
@@ -114,6 +116,7 @@ La documentazione completa è disponibile nella cartella `docs/`:
 - **[Configurazione Provider Storage](docs/storage-providers.md)** - Guida configurazione provider
 - **[Integrazione Filament](docs/filament-integration.md)** - Setup interfaccia admin
 - **[Strategia 2FA](docs/2fa-microsoft-authenticator-strategy.md)** - Autenticazione a due fattori
+- **[Visualizzazione Grafo Relazioni](docs/visualization.md)** - Grafo interattivo audit-controlli-evidenze
 - **[Analisi Funzionale](documents/analisi-funzionale.md)** - Requisiti e specifiche
 
 ## Requisiti

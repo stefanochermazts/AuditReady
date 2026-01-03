@@ -2,7 +2,9 @@
 
 namespace App\Observers;
 
+use App\Models\Audit;
 use App\Services\AuditLogService;
+use App\Services\AuditService;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -15,7 +17,8 @@ use Illuminate\Database\Eloquent\Model;
 class AuditObserver
 {
     public function __construct(
-        private AuditLogService $auditLogService
+        private AuditLogService $auditLogService,
+        private AuditService $auditService
     ) {
     }
 
@@ -38,6 +41,11 @@ class AuditObserver
             'old' => $model->getOriginal(),
             'new' => $model->getChanges(),
         ]);
+
+        // Invalidate graph cache if this is an Audit model
+        if ($model instanceof Audit) {
+            $this->auditService->invalidateGraphCache($model);
+        }
     }
 
     /**
@@ -48,6 +56,11 @@ class AuditObserver
         $this->auditLogService->record('deleted', $model, [
             'attributes' => $model->getAttributes(),
         ]);
+
+        // Invalidate graph cache if this is an Audit model
+        if ($model instanceof Audit) {
+            $this->auditService->invalidateGraphCache($model);
+        }
     }
 
     /**
@@ -58,5 +71,10 @@ class AuditObserver
         $this->auditLogService->record('restored', $model, [
             'attributes' => $model->getAttributes(),
         ]);
+
+        // Invalidate graph cache if this is an Audit model
+        if ($model instanceof Audit) {
+            $this->auditService->invalidateGraphCache($model);
+        }
     }
 }

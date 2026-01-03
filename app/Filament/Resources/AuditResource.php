@@ -3,6 +3,7 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\AuditResource\Pages;
+use App\Filament\Resources\AuditResource\RelationManagers\ControlsRelationManager;
 use App\Filament\Support\StatusBadgeHelper;
 use App\Models\Audit;
 use Filament\Actions;
@@ -172,6 +173,11 @@ class AuditResource extends Resource
                     ->counts('evidences')
                     ->label('Evidences')
                     ->sortable(),
+                Tables\Columns\TextColumn::make('controls_count')
+                    ->counts('controls')
+                    ->label('Controls')
+                    ->sortable()
+                    ->toggleable(),
                 Tables\Columns\TextColumn::make('auditor.name')
                     ->label('Auditor')
                     ->sortable()
@@ -262,6 +268,64 @@ class AuditResource extends Resource
                             ->send();
                     })
                     ->visible(fn (Audit $record) => auth()->user()->can('export', $record)),
+                Actions\Action::make('assign_control_owners')
+                    ->label('Assign Control Owners')
+                    ->icon('heroicon-o-shield-check')
+                    ->url(fn (Audit $record) => route('filament.admin.pages.ownership-matrix'))
+                    ->visible(fn (Audit $record) => auth()->user()->hasAnyRole(['Organization Owner', 'Audit Manager'])),
+                Actions\Action::make('generate_audit_day_pack')
+                    ->label('Generate Audit Day Pack')
+                    ->icon('heroicon-o-archive-box')
+                    ->color('info')
+                    ->form([
+                        Forms\Components\Select::make('format')
+                            ->label('Format')
+                            ->options([
+                                'zip' => 'ZIP (Organized folders)',
+                                'pdf' => 'PDF (Single document)',
+                                'both' => 'Both (ZIP + PDF)',
+                            ])
+                            ->default('both')
+                            ->required(),
+                        Forms\Components\Toggle::make('include_all_evidences')
+                            ->label('Include All Evidences')
+                            ->helperText('If disabled, only approved evidences will be included')
+                            ->default(true),
+                        Forms\Components\Toggle::make('include_full_audit_trail')
+                            ->label('Include Full Audit Trail')
+                            ->helperText('If disabled, only summary will be included')
+                            ->default(true),
+                    ])
+                    ->action(function (Audit $record, array $data) {
+                        try {
+                            $packService = app(\App\Services\AuditDayPackService::class);
+                            $pack = $packService->generatePack($record, [
+                                'format' => $data['format'],
+                                'include_all_evidences' => $data['include_all_evidences'],
+                                'include_full_audit_trail' => $data['include_full_audit_trail'],
+                                'generated_by' => auth()->id(),
+                            ]);
+
+                            \Filament\Notifications\Notification::make()
+                                ->title('Audit Day Pack Generated')
+                                ->success()
+                                ->body('The audit day pack has been generated successfully.')
+                                ->actions([
+                                    \Filament\Actions\Action::make('download')
+                                        ->label('Download')
+                                        ->url(route('audit-day-pack.download', ['pack' => $pack->id]))
+                                        ->openUrlInNewTab(),
+                                ])
+                                ->send();
+                        } catch (\Exception $e) {
+                            \Filament\Notifications\Notification::make()
+                                ->title('Generation Failed')
+                                ->danger()
+                                ->body('Failed to generate audit day pack: ' . $e->getMessage())
+                                ->send();
+                        }
+                    })
+                    ->visible(fn (Audit $record) => auth()->user()->hasAnyRole(['Organization Owner', 'Audit Manager'])),
                 Actions\DeleteAction::make(),
             ])
             ->bulkActions([
@@ -274,7 +338,7 @@ class AuditResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            ControlsRelationManager::class,
         ];
     }
 
