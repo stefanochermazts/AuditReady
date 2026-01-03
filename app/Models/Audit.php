@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -72,5 +73,53 @@ class Audit extends Model
     public function evidences(): HasMany
     {
         return $this->hasMany(Evidence::class);
+    }
+
+    /**
+     * Get the audit day packs for this audit.
+     */
+    public function auditDayPacks(): HasMany
+    {
+        return $this->hasMany(AuditDayPack::class);
+    }
+
+    /**
+     * Get controls directly linked to this audit through the pivot table.
+     */
+    public function controls(): BelongsToMany
+    {
+        return $this->belongsToMany(Control::class, 'audit_control')
+            ->withTimestamps();
+    }
+
+    /**
+     * Get controls related to this audit (through compliance standards)
+     * This is a logical relationship: controls can be filtered by audit's compliance_standards
+     * 
+     * @deprecated Use controls() relationship for direct links. This method is kept for backward compatibility.
+     */
+    public function relatedControls()
+    {
+        // First, get directly linked controls
+        $linkedControls = $this->controls()->pluck('id');
+
+        // Then, get controls that match the audit's compliance standards
+        $query = Control::whereIn('standard', $this->compliance_standards ?? [])
+            ->orWhere('standard', 'custom');
+
+        // If there are linked controls, include them
+        if ($linkedControls->isNotEmpty()) {
+            $query->orWhereIn('id', $linkedControls);
+        }
+
+        return $query;
+    }
+
+    /**
+     * Get the gap snapshots for this audit.
+     */
+    public function gapSnapshots(): HasMany
+    {
+        return $this->hasMany(GapSnapshot::class);
     }
 }

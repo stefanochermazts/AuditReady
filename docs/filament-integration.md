@@ -2,7 +2,7 @@
 
 ## Panoramica
 
-AuditReady utilizza **Filament 3.x** come framework per l'interfaccia amministrativa. Filament offre una UX moderna, sviluppo rapido e integrazione nativa con Laravel.
+AuditReady utilizza **Filament 4.4** come framework per l'interfaccia amministrativa. Filament offre una UX moderna, sviluppo rapido e integrazione nativa con Laravel.
 
 ## Perché Filament?
 

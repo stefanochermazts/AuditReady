@@ -4,7 +4,12 @@ namespace App\Services;
 
 use App\Models\Audit;
 use App\Models\AuditLog;
+use App\Models\Control;
 use App\Models\Evidence;
+use App\Models\GapSnapshot;
+use App\Services\ControlService;
+use App\Services\GapSnapshotService;
+use App\Services\PolicyService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -17,7 +22,10 @@ use RuntimeException;
 class ExportService
 {
     public function __construct(
-        private EvidenceService $evidenceService
+        private EvidenceService $evidenceService,
+        private ControlService $controlService,
+        private GapSnapshotService $gapSnapshotService,
+        private PolicyService $policyService
     ) {
     }
     /**
@@ -39,6 +47,48 @@ class ExportService
             ->where('model_id', $audit->id)
             ->orderBy('created_at', 'desc')
             ->get();
+
+        // Get control ownership matrix if audit has compliance standards
+        $ownershipMatrix = [];
+        if ($audit->compliance_standards && count($audit->compliance_standards) > 0) {
+            // Filter controls by audit's compliance standards
+            $filters = [];
+            if (in_array('DORA', $audit->compliance_standards)) {
+                $filters['standard'] = 'DORA';
+            } elseif (in_array('NIS2', $audit->compliance_standards)) {
+                $filters['standard'] = 'NIS2';
+            }
+            
+            $ownershipMatrix = $this->controlService->getOwnershipMatrix($filters);
+        }
+
+        // Get gap snapshots linked to this audit
+        $gapSnapshots = [];
+        $snapshots = \App\Models\GapSnapshot::where('audit_id', $audit->id)
+            ->whereNotNull('completed_at')
+            ->with(['responses.control', 'completedBy'])
+            ->get();
+        
+        foreach ($snapshots as $snapshot) {
+            $gapSnapshots[] = [
+                'snapshot' => $snapshot,
+                'gapAnalysis' => $this->gapSnapshotService->getGapAnalysis($snapshot),
+                'statistics' => $this->gapSnapshotService->getStatistics($snapshot),
+            ];
+        }
+
+        // Get policy coverage report if audit has compliance standards
+        $policyCoverage = [];
+        if ($audit->compliance_standards && count($audit->compliance_standards) > 0) {
+            $filters = [];
+            if (in_array('DORA', $audit->compliance_standards)) {
+                $filters['standard'] = 'DORA';
+            } elseif (in_array('NIS2', $audit->compliance_standards)) {
+                $filters['standard'] = 'NIS2';
+            }
+            
+            $policyCoverage = $this->policyService->generateCoverageReport($filters);
+        }
 
         // Generate evidence download links based on link mode
         $evidenceLinks = [];
@@ -62,6 +112,9 @@ class ExportService
             'exportDate' => now(),
             'evidenceLinks' => $evidenceLinks,
             'linkMode' => $linkMode,
+            'ownershipMatrix' => $ownershipMatrix,
+            'gapSnapshots' => $gapSnapshots,
+            'policyCoverage' => $policyCoverage,
         ];
 
         // Generate PDF
@@ -72,6 +125,188 @@ class ExportService
         $tenantId = tenant('id') ?? 'system';
         $timestamp = now()->format('Y-m-d_His');
         $filename = "exports/{$tenantId}/audit_{$audit->id}_{$timestamp}.pdf";
+
+        // Store PDF (encrypted)
+        $encryptedContent = $this->encryptContent($pdf->output());
+        $storageService = new StorageService();
+        $storageService->put($filename, $encryptedContent);
+
+        return $filename;
+    }
+
+    /**
+     * Export control ownership matrix to PDF
+     *
+     * @param array $filters Optional filters for controls
+     * @return string Path to the exported file
+     */
+    public function exportOwnershipMatrixToPdf(array $filters = []): string
+    {
+        $matrix = $this->controlService->getOwnershipMatrix($filters);
+        $statistics = $this->controlService->getOwnershipStatistics($filters);
+
+        // Prepare data for PDF
+        $data = [
+            'matrix' => $matrix,
+            'statistics' => $statistics,
+            'filters' => $filters,
+            'exportDate' => now(),
+        ];
+
+        // Generate PDF
+        $pdf = Pdf::loadView('exports.ownership-matrix-pdf', $data);
+        $pdf->setPaper('a4', 'landscape'); // Landscape for better table display
+
+        // Generate filename
+        $tenantId = tenant('id') ?? 'system';
+        $timestamp = now()->format('Y-m-d_His');
+        $filename = "exports/{$tenantId}/ownership_matrix_{$timestamp}.pdf";
+
+        // Store PDF (encrypted)
+        $encryptedContent = $this->encryptContent($pdf->output());
+        $storageService = new StorageService();
+        $storageService->put($filename, $encryptedContent);
+
+        return $filename;
+    }
+
+    /**
+     * Export policy coverage report to PDF
+     *
+     * @param array $filters Optional filters (standard, category)
+     * @return string Path to the exported file
+     */
+    public function exportPolicyCoverageReportToPdf(array $filters = []): string
+    {
+        $coverage = $this->policyService->generateCoverageReport($filters);
+
+        $data = [
+            'coverage' => $coverage,
+            'filters' => $filters,
+            'exportDate' => now(),
+        ];
+
+        $pdf = Pdf::loadView('exports.policy-coverage-pdf', $data);
+        $pdf->setPaper('a4', 'portrait');
+
+        $tenantId = tenant('id') ?? 'system';
+        $timestamp = now()->format('Y-m-d_His');
+        $filename = "exports/{$tenantId}/policy_coverage_{$timestamp}.pdf";
+
+        $encryptedContent = $this->encryptContent($pdf->output());
+        $storageService = new StorageService();
+        $storageService->put($filename, $encryptedContent);
+
+        return $filename;
+    }
+
+    /**
+     * Export control ownership matrix to Excel
+     *
+     * @param array $filters Optional filters for controls
+     * @return string Path to the exported file
+     */
+    public function exportOwnershipMatrixToExcel(array $filters = []): string
+    {
+        $matrix = $this->controlService->getOwnershipMatrix($filters);
+
+        // Generate CSV content (Excel-compatible)
+        $csvData = [];
+        
+        // Header row
+        $csvData[] = [
+            'Standard',
+            'Article Reference',
+            'Title',
+            'Category',
+            'Owner Name',
+            'Owner Email',
+            'Role Name',
+            'Responsibility Level',
+            'Notes',
+        ];
+
+        // Data rows
+        foreach ($matrix as $control) {
+            if (count($control['owners']) > 0) {
+                foreach ($control['owners'] as $owner) {
+                    $csvData[] = [
+                        $control['standard'],
+                        $control['article_reference'] ?? '',
+                        $control['title'],
+                        $control['category'] ?? '',
+                        $owner['user_name'],
+                        $owner['user_email'],
+                        $owner['role_name'] ?? '',
+                        $owner['responsibility_level'],
+                        $owner['notes'] ?? '',
+                    ];
+                }
+            } else {
+                // Control without owners
+                $csvData[] = [
+                    $control['standard'],
+                    $control['article_reference'] ?? '',
+                    $control['title'],
+                    $control['category'] ?? '',
+                    'No owners assigned',
+                    '',
+                    '',
+                    '',
+                    '',
+                ];
+            }
+        }
+
+        // Generate CSV content
+        $csvContent = '';
+        foreach ($csvData as $row) {
+            $csvContent .= '"' . implode('","', array_map(function ($field) {
+                return str_replace('"', '""', $field);
+            }, $row)) . '"' . "\n";
+        }
+
+        // Generate filename
+        $tenantId = tenant('id') ?? 'system';
+        $timestamp = now()->format('Y-m-d_His');
+        $filename = "exports/{$tenantId}/ownership_matrix_{$timestamp}.csv";
+
+        // Store CSV (encrypted)
+        $encryptedContent = $this->encryptContent($csvContent);
+        $storageService = new StorageService();
+        $storageService->put($filename, $encryptedContent);
+
+        return $filename;
+    }
+
+    /**
+     * Export gap snapshot report to PDF
+     *
+     * @param GapSnapshot $snapshot
+     * @return string Path to the exported file
+     */
+    public function exportGapSnapshotToPdf(GapSnapshot $snapshot): string
+    {
+        // Get gap analysis
+        $gapAnalysis = $this->gapSnapshotService->getGapAnalysis($snapshot);
+        $statistics = $this->gapSnapshotService->getStatistics($snapshot);
+
+        // Prepare data for PDF
+        $data = [
+            'snapshot' => $snapshot,
+            'gapAnalysis' => $gapAnalysis,
+            'statistics' => $statistics,
+            'exportDate' => now(),
+        ];
+
+        // Generate PDF
+        $pdf = Pdf::loadView('exports.gap-snapshot-pdf', $data);
+        $pdf->setPaper('a4', 'portrait');
+
+        // Generate filename
+        $tenantId = tenant('id') ?? 'system';
+        $timestamp = now()->format('Y-m-d_His');
+        $filename = "exports/{$tenantId}/gap_snapshot_{$snapshot->id}_{$timestamp}.pdf";
 
         // Store PDF (encrypted)
         $encryptedContent = $this->encryptContent($pdf->output());

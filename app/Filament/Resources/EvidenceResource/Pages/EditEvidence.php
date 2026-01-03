@@ -13,6 +13,11 @@ class EditEvidence extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
+            Actions\Action::make('download')
+                ->label('Download')
+                ->icon('heroicon-o-arrow-down-tray')
+                ->url(fn () => route('evidence.download', ['evidence' => $this->record->id]))
+                ->openUrlInNewTab(),
             Actions\ViewAction::make(),
             Actions\DeleteAction::make(),
         ];

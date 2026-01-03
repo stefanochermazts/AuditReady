@@ -115,3 +115,42 @@
 
 /* Enable Filament's dark-mode variant selector (harmless even if dark mode is off). */
 @variant dark (&:where(.dark, .dark *));
+
+/* ------------------------------------------------------------
+ * Brand logo sizing
+ * - Default: 3rem (Tailwind h-12)
+ * - Mobile only: 1.5rem (Tailwind h-6)
+ *
+ * Note: Filament sets the height via inline style. We need `!important`
+ * on the mobile override to win.
+ * ------------------------------------------------------------ */
+
+.fi-logo {
+    height: 3rem;
+}
+
+@media (max-width: 639.98px) {
+    .fi-logo {
+        height: 1.5rem !important;
+    }
+}
+
+/* ------------------------------------------------------------
+ * Mobile topbar: always show the brand logo
+ *
+ * Filament hides `.fi-topbar-start` below `lg`, which also hides the logo.
+ * We force it visible on smaller screens, while hiding the desktop-only
+ * collapse controls inside it (the hamburger button already exists).
+ * ------------------------------------------------------------ */
+
+@media (max-width: 1023.98px) {
+    .fi-topbar-start {
+        display: flex !important;
+        align-items: center;
+    }
+
+    /* Don't show desktop collapse controls on mobile (avoid empty spacing). */
+    .fi-topbar-start .fi-topbar-collapse-sidebar-btn-ctn {
+        display: none !important;
+    }
+}

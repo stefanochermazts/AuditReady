@@ -52,6 +52,18 @@ Route::middleware([
         // Evidence download route (signature optional - if present, it's verified; if not, only auth is checked)
         Route::get('evidence/{evidence}/download', [\App\Http\Controllers\EvidenceController::class, 'download'])
             ->name('evidence.download');
+        
+        // Audit day pack download route
+        Route::get('audit-day-pack/{pack}/download', [\App\Http\Controllers\AuditDayPackController::class, 'download'])
+            ->name('audit-day-pack.download');
+    });
+    
+    // Public evidence request routes (no authentication required)
+    Route::prefix('evidence-request')->name('public.evidence-request.')->group(function () {
+        Route::get('/{token}', [\App\Http\Controllers\PublicEvidenceRequestController::class, 'show'])
+            ->name('show');
+        Route::post('/{token}', [\App\Http\Controllers\PublicEvidenceRequestController::class, 'store'])
+            ->name('store');
     });
     
     // Tenant-specific routes will be added here

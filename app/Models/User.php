@@ -96,4 +96,22 @@ class User extends Authenticatable
     {
         $this->two_factor_recovery_codes = encrypt(json_encode($codes));
     }
+
+    /**
+     * Get the controls owned by this user (through control_owners pivot)
+     */
+    public function ownedControls(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(Control::class, 'control_owners')
+            ->withPivot('role_name', 'responsibility_level', 'notes')
+            ->withTimestamps();
+    }
+
+    /**
+     * Get controls where user is primary owner
+     */
+    public function primaryOwnedControls(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->ownedControls()->wherePivot('responsibility_level', 'primary');
+    }
 }

@@ -14,6 +14,7 @@ class Evidence extends Model
 
     protected $fillable = [
         'audit_id',
+        'evidence_request_id',
         'uploader_id',
         'filename',
         'category',
@@ -59,6 +60,14 @@ class Evidence extends Model
     }
 
     /**
+     * Get the evidence request (third-party upload) that created this evidence.
+     */
+    public function evidenceRequest(): BelongsTo
+    {
+        return $this->belongsTo(EvidenceRequest::class, 'evidence_request_id');
+    }
+
+    /**
      * Get the user who uploaded the evidence.
      */
     public function uploader(): BelongsTo
@@ -93,5 +102,13 @@ class Evidence extends Model
         return static::where('audit_id', $this->audit_id)
             ->where('filename', $this->filename)
             ->max('version') ?? 0;
+    }
+
+    /**
+     * Get the policy that uses this evidence (if any).
+     */
+    public function policy(): BelongsTo
+    {
+        return $this->belongsTo(Policy::class, 'evidence_id');
     }
 }

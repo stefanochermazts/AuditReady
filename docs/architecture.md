@@ -544,7 +544,7 @@ sequenceDiagram
 
 ### ADR-003: Filament per UI
 
-**Decisione**: Filament 3.x come admin panel
+**Decisione**: Filament 4.4 come admin panel
 
 **Ragioni**:
 - UX moderna out-of-the-box

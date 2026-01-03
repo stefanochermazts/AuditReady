@@ -71,6 +71,11 @@ class AppServiceProvider extends ServiceProvider
         foreach ($auditableModels as $model) {
             $model::observe(\App\Observers\AuditObserver::class);
         }
+
+        // Register graph cache invalidation observers
+        \App\Models\Evidence::observe(\App\Observers\EvidenceObserver::class);
+        \App\Models\Control::observe(\App\Observers\ControlObserver::class);
+        \App\Models\PolicyControlMapping::observe(\App\Observers\PolicyControlMappingObserver::class);
     }
     
     /**
