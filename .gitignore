@@ -30,3 +30,9 @@ Thumbs.db
 /storage/app/backups
 /.artiforge/*.md
 !.artiforge/plan-*.md
+
+# Cursor / IDE
+/.cursor
+
+# Tenant local storage artifacts (stancl multi-db local testing)
+/storage/tenant*/
